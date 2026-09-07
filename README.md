@@ -76,27 +76,18 @@ SENTINEL-X is an integrated cybersecurity and digital-forensics platform designe
 
 ### 2. Installation Commands
 ```bash
-# Clone or navigate to directory
-cd "c:\Users\Yash\Desktop\sih data eraser problem statement"
 
 # Install requirements
 pip install django djangorestframework reportlab psutil pillow pytest
 ```
 
-### 3. Initialize Demo Environment
-Run the management command to generate synthetic test media (`test_drive.img`), populate default cases, evidence, devices, and create the admin user:
-```bash
-python manage.py create_demo_environment
-```
-*(Default Admin Credentials: **admin** / **admin123**)*
-
-### 4. Run the Web Dashboard
+### 3. Run the Web Dashboard
 ```bash
 python manage.py runserver 8000
 ```
 Open your browser at [http://127.0.0.1:8000](http://127.0.0.1:8000).
 
-### 5. Run Automated Test Suite
+### 4. Run Automated Test Suite
 ```bash
 python manage.py test tests
 ```
