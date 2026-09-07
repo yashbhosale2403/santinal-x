@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Secure File Eraser | SENTINEL-X{% endblock %}
+{% block breadcrumb %}File Eraser{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-4xl mx-auto">
+
+    <div>
+        <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Secure File & Directory Eraser</h1>
+        <p class="text-xs text-slate-500 mt-0.5">Multi-pass block-level overwriting, OS cache flushing, and filesystem limitation breakdown</p>
+    </div>
+
+    <form method="POST" action="/file-erasure/" class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-card space-y-6">
+        {% csrf_token %}
+
+        <div class="space-y-4">
+            <h2 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">Target File or Directory Selection</h2>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">Absolute Target File or Directory Path:</label>
+                <input type="text" name="target_path" placeholder="C:\Users\Target\Documents\sensitive_data.docx or E:\test.txt" class="w-full bg-slate-50 border border-slate-200 text-slate-900 font-mono text-xs p-3 rounded-xl outline-none focus:border-teal-500" required>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Erasure Algorithm</label>
+                    <select name="erasure_method" class="w-full bg-slate-50 border border-slate-200 text-slate-900 p-3 rounded-xl font-medium">
+                        <option value="ZERO_OVERWRITE">Single Pass Zero Fill (Logical Sector Overwrite)</option>
+                        <option value="MULTI_PASS_RANDOM">3-Pass Pseudo-Random Overwrite</option>
+                        <option value="GUTMANN_SIMULATION">5-Pass Multi-Pattern Overwrite Pass</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Execution Mode</label>
+                    <select name="execution_mode" class="w-full bg-slate-50 border border-slate-200 text-slate-900 font-semibold p-3 rounded-xl">
+                        <option value="REAL_MODE">REAL MODE (Actual Block Overwriting & Deletion)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="w-full py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-xl shadow-xs transition uppercase tracking-wider flex items-center justify-center space-x-2">
+            <i class="fa-solid fa-file-shield text-xs"></i>
+            <span>Execute File Erasure</span>
+        </button>
+    </form>
+
+    <!-- Recent File Erasures -->
+    <div class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-card space-y-4">
+        <h2 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+            <i class="fa-solid fa-clock-rotate-left text-slate-400 text-xs"></i>
+            <span>Recent File Erasure Operations</span>
+        </h2>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-sans text-slate-600">
+                <thead class="bg-slate-50 text-slate-500 border-b border-slate-200/80">
+                    <tr>
+                        <th class="py-2.5 px-3">Target Path</th>
+                        <th class="py-2.5 px-3">Algorithm</th>
+                        <th class="py-2.5 px-3">Files / Size</th>
+                        <th class="py-2.5 px-3">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for op in recent_ops %}
+                    <tr class="hover:bg-slate-50/60">
+                        <td class="py-2.5 px-3 text-slate-900 font-mono truncate max-w-xs">{{ op.target_path }}</td>
+                        <td class="py-2.5 px-3 text-teal-700 font-medium">{{ op.get_erasure_method_display }}</td>
+                        <td class="py-2.5 px-3 text-slate-500">{{ op.total_files }} file(s) ({{ op.total_bytes }} B)</td>
+                        <td class="py-2.5 px-3 font-semibold text-emerald-600">{{ op.verification_status }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="py-4 text-center text-slate-400">No file erasures performed yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

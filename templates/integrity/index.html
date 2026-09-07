@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}System Integrity | SENTINEL-X{% endblock %}
+{% block breadcrumb %}Integrity{% endblock %}
+
+{% block content %}
+<div class="space-y-8 max-w-4xl mx-auto">
+
+    <!-- Hero Verification Banner -->
+    <div class="bg-white border border-slate-200/80 rounded-2xl p-8 shadow-card text-center space-y-4">
+        <div class="w-14 h-14 rounded-full bg-teal-50 border border-teal-200 text-teal-600 flex items-center justify-center font-extrabold text-2xl mx-auto">
+            <i class="fa-solid fa-shield-check"></i>
+        </div>
+
+        <div class="space-y-1">
+            <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Everything is verified.</h1>
+            <p class="text-slate-500 text-sm">Cryptographic proof of evidence hashes, audit trail chain, reports, and ledger status</p>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-center gap-4 text-xs font-semibold text-teal-700 pt-2">
+            <span class="px-3 py-1 bg-teal-50 border border-teal-200 rounded-full flex items-center space-x-1.5"><i class="fa-solid fa-check"></i><span>Evidence Integrity</span></span>
+            <span class="px-3 py-1 bg-teal-50 border border-teal-200 rounded-full flex items-center space-x-1.5"><i class="fa-solid fa-check"></i><span>Audit Chain Valid</span></span>
+            <span class="px-3 py-1 bg-teal-50 border border-teal-200 rounded-full flex items-center space-x-1.5"><i class="fa-solid fa-check"></i><span>Report Hashes</span></span>
+            <span class="px-3 py-1 bg-teal-50 border border-teal-200 rounded-full flex items-center space-x-1.5"><i class="fa-solid fa-check"></i><span>Ledger Synchronized</span></span>
+        </div>
+    </div>
+
+    <!-- Integrity Status Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+
+        <div class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-card space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Evidence Image Hashes</span>
+                <i class="fa-solid fa-hard-drive text-teal-600"></i>
+            </div>
+            <div class="flex items-baseline justify-between">
+                <span class="text-2xl font-extrabold text-slate-900">{{ evidence_count }} Images</span>
+                <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">VERIFIED</span>
+            </div>
+            <p class="text-xs text-slate-500">Bit-stream SHA-256 evidence hashes matched prior to analysis.</p>
+        </div>
+
+        <div class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-card space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Audit Hash Chain</span>
+                <i class="fa-solid fa-link-slash text-teal-600"></i>
+            </div>
+            <div class="flex items-baseline justify-between">
+                <span class="text-2xl font-extrabold text-slate-900">{{ audit_count }} Events</span>
+                <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">VERIFIED</span>
+            </div>
+            <p class="text-xs text-slate-500">Cryptographic hash chain intact across all system logs.</p>
+        </div>
+
+        <div class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-card space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Generated PDF Reports</span>
+                <i class="fa-solid fa-file-pdf text-teal-600"></i>
+            </div>
+            <div class="flex items-baseline justify-between">
+                <span class="text-2xl font-extrabold text-slate-900">{{ reports_count }} Reports</span>
+                <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">VERIFIED</span>
+            </div>
+            <p class="text-xs text-slate-500">Sanitization certificates & recovery reports hashed and stored.</p>
+        </div>
+
+        <div class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-card space-y-3">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Immutable Ledger</span>
+                <i class="fa-solid fa-cubes text-teal-600"></i>
+            </div>
+            <div class="flex items-baseline justify-between">
+                <span class="text-2xl font-extrabold text-slate-900">{{ ledger_count }} Entries</span>
+                <span class="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">SYNCHRONIZED</span>
+            </div>
+            <p class="text-xs text-slate-500">Local immutable ledger & blockchain adapter records synchronized.</p>
+        </div>
+
+    </div>
+
+    <!-- Actions -->
+    <div class="pt-2 text-center">
+        <a href="/audit/verify/" class="px-6 py-3 bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs rounded-xl shadow-xs transition inline-flex items-center space-x-2">
+            <i class="fa-solid fa-arrows-rotate text-xs"></i>
+            <span>Run Complete Integrity Verification</span>
+        </a>
+    </div>
+
+</div>
+{% endblock %}

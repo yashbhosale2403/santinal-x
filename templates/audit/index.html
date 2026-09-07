@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Chain Integrity | SENTINEL-X{% endblock %}
+{% block breadcrumb %}Audit Chain{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Header & Action Controls Toolbar Card -->
+    <div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-purity-card flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div class="space-y-1 max-w-xl">
+            <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[10px] font-extrabold uppercase tracking-wider">Cryptographic Log</span>
+                <span class="text-[11px] font-mono text-slate-400">SHA-256 Hash Chain</span>
+            </div>
+            <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Cryptographic Audit Chain</h1>
+            <p class="text-xs text-slate-400 font-mono pt-0.5">hash_N = SHA256(event_data + hash_{N-1})</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-3 shrink-0">
+            <a href="/audit/verify/" class="px-4 py-2.5 bg-[#4FD1C5] hover:bg-teal-500 text-white font-extrabold text-xs rounded-xl shadow-purity-teal transition flex items-center space-x-2 shrink-0">
+                <i class="fa-solid fa-shield-check text-xs"></i>
+                <span>Verify Integrity</span>
+            </a>
+            <a href="/audit/tamper-demo/" class="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl border border-rose-200/80 transition flex items-center space-x-2 shrink-0">
+                <i class="fa-solid fa-bug text-xs"></i>
+                <span>Trigger Tamper Demo</span>
+            </a>
+            <a href="/audit/reset/" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center space-x-2 shrink-0">
+                <i class="fa-solid fa-rotate-left text-xs"></i>
+                <span>Restore Audit Chain</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Integrity Status Banner -->
+    <div class="p-5 rounded-3xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-purity-card {% if integrity_res.status == 'GREEN' %}bg-teal-50/60 border-teal-200 text-teal-900{% else %}bg-rose-50 border-rose-200 text-rose-900 animate-pulse{% endif %} text-xs">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-2xl {% if integrity_res.status == 'GREEN' %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}bg-rose-500 text-white shadow-md{% endif %} flex items-center justify-center font-bold text-base shrink-0">
+                <i class="fa-solid {% if integrity_res.status == 'GREEN' %}fa-check{% else %}fa-triangle-exclamation{% endif %}"></i>
+            </div>
+            <div>
+                <div class="font-extrabold text-sm">Audit Chain Status: {{ integrity_res.status }} — {{ integrity_res.message }}</div>
+                <div class="text-[11px] opacity-80 font-medium mt-0.5">Total Chained Events Verified: <strong>{{ integrity_res.total_events }}</strong></div>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2 shrink-0">
+            {% if integrity_res.status != 'GREEN' %}
+            <a href="/audit/reset/" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center space-x-1.5 uppercase tracking-wider">
+                <i class="fa-solid fa-rotate-left"></i>
+                <span>Restore Normal Chain</span>
+            </a>
+            {% else %}
+            <span class="px-3.5 py-1.5 bg-white rounded-xl font-mono text-[10px] font-extrabold border border-teal-200 text-teal-700 shadow-xs">SHA-256 INTACT</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Audit Events Table -->
+    <div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-purity-card space-y-4">
+        <div class="flex items-center justify-between px-1">
+            <h2 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider">Historical Audit Logs</h2>
+            <span class="text-xs text-slate-400 font-mono" x-text="'Showing latest ' + {{ events|length }} + ' events'"></span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-sans text-slate-600">
+                <thead class="bg-slate-50 text-slate-500 border-b border-slate-100 uppercase tracking-wider text-[10px] font-extrabold">
+                    <tr>
+                        <th class="py-3.5 px-4 rounded-l-xl">Timestamp</th>
+                        <th class="py-3.5 px-4">Event Type</th>
+                        <th class="py-3.5 px-4">User</th>
+                        <th class="py-3.5 px-4">Previous Event Hash</th>
+                        <th class="py-3.5 px-4 rounded-r-xl">Current Event Hash</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 font-mono text-[11px]">
+                    {% for event in events %}
+                    <tr class="hover:bg-slate-50/80 transition">
+                        <td class="py-3 px-4 text-slate-500 font-sans text-xs font-medium">{{ event.timestamp|date:"Y-m-d H:i:s UTC" }}</td>
+                        <td class="py-3 px-4 font-extrabold font-sans text-xs text-slate-800">
+                            <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">{{ event.event_type }}</span>
+                        </td>
+                        <td class="py-3 px-4 font-sans font-semibold text-slate-600">{{ event.user.username|default:"SYSTEM" }}</td>
+                        <td class="py-3 px-4 text-slate-400 font-mono text-[11px]">{{ event.previous_event_hash|slice:":20" }}...</td>
+                        <td class="py-3 px-4 text-teal-700 font-bold font-mono text-[11px]">{{ event.event_hash|slice:":20" }}...</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="py-8 text-center text-slate-400 font-sans font-medium">No audit events recorded yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

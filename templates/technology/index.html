@@ -1,0 +1,872 @@
+{% extends "base.html" %}
+
+{% block title %}Technology & Methods | SENTINEL-X{% endblock %}
+{% block breadcrumb %}Technology & Methods{% endblock %}
+
+{% block content %}
+<div class="space-y-8" x-data="technologyPage()">
+
+    <!-- Header Title Banner -->
+    <div class="bg-gradient-to-r from-teal-500 via-teal-400 to-cyan-500 rounded-3xl p-8 text-white shadow-xl shadow-teal-500/20 relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div class="space-y-2 max-w-2xl z-10">
+            <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-1 bg-white/20 text-white text-[10px] font-extrabold rounded-full uppercase tracking-wider backdrop-blur-xs">Architecture & Methodology</span>
+                <span class="text-xs font-mono text-teal-100">NIST SP 800-88 Rev. 2</span>
+            </div>
+            <h1 class="text-3xl font-extrabold tracking-tight">🧠 Technology & Internal Methods</h1>
+            <p class="text-xs text-teal-50 opacity-90 leading-relaxed font-medium">
+                Comprehensive technical breakdown of how SENTINEL-X executes device detection, hardware-level sanitization decision policy, read-only evidence carving, analytical confidence scoring, and cryptographic hash chain verification.
+            </p>
+        </div>
+        <div class="flex flex-col sm:flex-row gap-3 z-10 shrink-0">
+            <a href="/documentation/" class="px-5 py-2.5 bg-white text-teal-700 font-extrabold text-xs rounded-xl shadow-md hover:bg-teal-50 transition uppercase tracking-wider text-center flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-book-bookmark"></i>
+                <span>Read Full Documentation</span>
+            </a>
+        </div>
+        <div class="w-48 h-48 rounded-full bg-white/10 absolute -right-10 -bottom-10 blur-2xl pointer-events-none"></div>
+    </div>
+
+    <!-- Quick Navigation Anchor Pills -->
+    <div class="flex flex-wrap gap-2 text-xs font-bold">
+        <a href="#sec-a" class="px-3 py-1.5 rounded-xl bg-white border border-slate-100 text-slate-600 hover:text-teal-600 shadow-purity transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-diagram-project text-teal-500"></i><span>Decision Engine</span>
+        </a>
+        <a href="#sec-b" class="px-3 py-1.5 rounded-xl bg-white border border-slate-100 text-slate-600 hover:text-teal-600 shadow-purity transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-hard-drive text-teal-500"></i><span>Device Methods</span>
+        </a>
+        <a href="#sec-c" class="px-3 py-1.5 rounded-xl bg-white border border-slate-100 text-slate-600 hover:text-teal-600 shadow-purity transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-scale-balanced text-teal-500"></i><span>Algorithm vs Hash</span>
+        </a>
+        <a href="#sec-d" class="px-3 py-1.5 rounded-xl bg-white border border-slate-100 text-slate-600 hover:text-teal-600 shadow-purity transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-microscope text-teal-500"></i><span>File Carving</span>
+        </a>
+        <a href="#sec-e" class="px-3 py-1.5 rounded-xl bg-white border border-slate-100 text-slate-600 hover:text-teal-600 shadow-purity transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-chart-simple text-teal-500"></i><span>Confidence Score</span>
+        </a>
+        <a href="#sec-g" class="px-3 py-1.5 rounded-xl bg-white border border-slate-100 text-slate-600 hover:text-teal-600 shadow-purity transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-link text-teal-500"></i><span>Tamper Chain</span>
+        </a>
+        <a href="#sec-i" class="px-3 py-1.5 rounded-xl bg-white border border-slate-100 text-slate-600 hover:text-teal-600 shadow-purity transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-certificate text-teal-500"></i><span>NIST SP 800-88</span>
+        </a>
+        <a href="#sec-j" class="px-3 py-1.5 rounded-xl bg-white border border-slate-100 text-slate-600 hover:text-teal-600 shadow-purity transition flex items-center space-x-1.5">
+            <i class="fa-solid fa-sitemap text-teal-500"></i><span>Full Architecture</span>
+        </a>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- SECTION A — SANITIZATION DECISION ENGINE                    -->
+    <!-- ============================================================ -->
+    <div id="sec-a" class="bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-purity-card space-y-6">
+        <div class="flex items-center justify-between">
+            <div class="space-y-1">
+                <div class="flex items-center space-x-2">
+                    <span class="px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[10px] font-extrabold uppercase tracking-wider">Section A</span>
+                    <h2 class="text-xl font-extrabold text-slate-800">Sanitization Decision Engine</h2>
+                </div>
+                <p class="text-xs text-slate-400 font-medium">Click any block in the pipeline to view detailed hardware evaluation logic.</p>
+            </div>
+            <span class="hidden sm:inline-block px-3 py-1 bg-slate-100 text-slate-600 text-[10px] font-mono rounded-lg">Interactive Flow Diagram</span>
+        </div>
+
+        <!-- Visual Flow Pipeline -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+            <button @click="selectedNode = 'storage'" :class="selectedNode === 'storage' ? 'border-teal-500 bg-teal-50/50 shadow-purity-teal' : 'border-slate-200 bg-slate-50 hover:bg-white'" class="p-4 rounded-2xl border text-left transition flex flex-col justify-between space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-mono font-bold text-slate-400">STEP 01</span>
+                    <i class="fa-solid fa-hard-drive text-teal-500"></i>
+                </div>
+                <span class="text-xs font-extrabold text-slate-800">STORAGE DEVICE</span>
+                <span class="text-[10px] text-slate-500">Physical disk or block media target</span>
+            </button>
+
+            <button @click="selectedNode = 'detection'" :class="selectedNode === 'detection' ? 'border-teal-500 bg-teal-50/50 shadow-purity-teal' : 'border-slate-200 bg-slate-50 hover:bg-white'" class="p-4 rounded-2xl border text-left transition flex flex-col justify-between space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-mono font-bold text-slate-400">STEP 02</span>
+                    <i class="fa-solid fa-magnifying-glass text-teal-500"></i>
+                </div>
+                <span class="text-xs font-extrabold text-slate-800">DEVICE DETECTION</span>
+                <span class="text-[10px] text-slate-500">WMI, SMART & OS bus enumeration</span>
+            </button>
+
+            <button @click="selectedNode = 'capabilities'" :class="selectedNode === 'capabilities' ? 'border-teal-500 bg-teal-50/50 shadow-purity-teal' : 'border-slate-200 bg-slate-50 hover:bg-white'" class="p-4 rounded-2xl border text-left transition flex flex-col justify-between space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-mono font-bold text-slate-400">STEP 03</span>
+                    <i class="fa-solid fa-sliders text-teal-500"></i>
+                </div>
+                <span class="text-xs font-extrabold text-slate-800">MEDIA & CAPABILITY CHECK</span>
+                <span class="text-[10px] text-slate-500">SATA, NVMe Format, SED Crypto flags</span>
+            </button>
+
+            <button @click="selectedNode = 'policy'" :class="selectedNode === 'policy' ? 'border-teal-500 bg-teal-50/50 shadow-purity-teal' : 'border-slate-200 bg-slate-50 hover:bg-white'" class="p-4 rounded-2xl border text-left transition flex flex-col justify-between space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-mono font-bold text-slate-400">STEP 04</span>
+                    <i class="fa-solid fa-gears text-teal-500"></i>
+                </div>
+                <span class="text-xs font-extrabold text-slate-800">POLICY ENGINE</span>
+                <span class="text-[10px] text-slate-500">Maps NIST SP 800-88 Rev. 2 target</span>
+            </button>
+        </div>
+
+        <!-- Branching Decision Nodes -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+            <button @click="selectedNode = 'branch_hdd'" :class="selectedNode === 'branch_hdd' ? 'border-teal-500 bg-teal-50/50 shadow-purity-teal' : 'border-slate-200 bg-slate-50 hover:bg-white'" class="p-4 rounded-2xl border text-left transition space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="px-2 py-0.5 rounded bg-slate-200 text-slate-700 text-[10px] font-bold">HDD Track</span>
+                    <i class="fa-solid fa-compact-disc text-teal-600"></i>
+                </div>
+                <div class="text-xs font-extrabold text-slate-800">HDD Sanitization</div>
+                <p class="text-[10px] text-slate-500">Controlled Overwrite / Sector Zeroing / ATA Secure Erase</p>
+            </button>
+
+            <button @click="selectedNode = 'branch_sata'" :class="selectedNode === 'branch_sata' ? 'border-teal-500 bg-teal-50/50 shadow-purity-teal' : 'border-slate-200 bg-slate-50 hover:bg-white'" class="p-4 rounded-2xl border text-left transition space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="px-2 py-0.5 rounded bg-teal-100 text-teal-800 text-[10px] font-bold">SATA SSD Track</span>
+                    <i class="fa-solid fa-microchip text-teal-600"></i>
+                </div>
+                <div class="text-xs font-extrabold text-slate-800">SATA Sanitization</div>
+                <p class="text-[10px] text-slate-500">ATA Sanitize / Block Erase / Cryptographic Key Purge</p>
+            </button>
+
+            <button @click="selectedNode = 'branch_nvme'" :class="selectedNode === 'branch_nvme' ? 'border-teal-500 bg-teal-50/50 shadow-purity-teal' : 'border-slate-200 bg-slate-50 hover:bg-white'" class="p-4 rounded-2xl border text-left transition space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="px-2 py-0.5 rounded bg-cyan-100 text-cyan-800 text-[10px] font-bold">NVMe SSD Track</span>
+                    <i class="fa-solid fa-bolt text-teal-600"></i>
+                </div>
+                <div class="text-xs font-extrabold text-slate-800">NVMe Sanitization</div>
+                <p class="text-[10px] text-slate-500">NVMe Format / User Data Erase / Controller Crypto Erase</p>
+            </button>
+        </div>
+
+        <!-- Convergence Steps -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button @click="selectedNode = 'verification'" :class="selectedNode === 'verification' ? 'border-teal-500 bg-teal-50/50 shadow-purity-teal' : 'border-slate-200 bg-slate-50 hover:bg-white'" class="p-4 rounded-2xl border text-left transition flex flex-col justify-between space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-mono font-bold text-slate-400">STEP 05</span>
+                    <i class="fa-solid fa-[#4FD1C5] fa-check-double text-teal-500"></i>
+                </div>
+                <span class="text-xs font-extrabold text-slate-800">POST-OP VERIFICATION</span>
+                <span class="text-[10px] text-slate-500">Multi-offset sector zero sampling (0-100%)</span>
+            </button>
+
+            <button @click="selectedNode = 'audit_report'" :class="selectedNode === 'audit_report' ? 'border-teal-500 bg-teal-50/50 shadow-purity-teal' : 'border-slate-200 bg-slate-50 hover:bg-white'" class="p-4 rounded-2xl border text-left transition flex flex-col justify-between space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-mono font-bold text-slate-400">STEP 06</span>
+                    <i class="fa-solid fa-file-pdf text-teal-500"></i>
+                </div>
+                <span class="text-xs font-extrabold text-slate-800">AUDIT + REPORT</span>
+                <span class="text-[10px] text-slate-500">Signed Certificate generation with SHA-256</span>
+            </button>
+
+            <button @click="selectedNode = 'immutable_record'" :class="selectedNode === 'immutable_record' ? 'border-teal-500 bg-teal-50/50 shadow-purity-teal' : 'border-slate-200 bg-slate-50 hover:bg-white'" class="p-4 rounded-2xl border text-left transition flex flex-col justify-between space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-[10px] font-mono font-bold text-slate-400">STEP 07</span>
+                    <i class="fa-solid fa-link text-teal-500"></i>
+                </div>
+                <span class="text-xs font-extrabold text-slate-800">IMMUTABLE RECORD</span>
+                <span class="text-[10px] text-slate-500">Ledger block commit with cryptographic hash chain</span>
+            </button>
+        </div>
+
+        <!-- Node Explanation Panel -->
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-2">
+            <div class="flex items-center space-x-2 text-slate-800 font-extrabold text-xs">
+                <i class="fa-solid fa-circle-info text-teal-500"></i>
+                <span x-text="nodeDetails[selectedNode].title"></span>
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed font-medium" x-text="nodeDetails[selectedNode].desc"></p>
+            <div class="pt-2 flex items-center space-x-2 font-mono text-[11px] text-teal-700">
+                <span class="font-bold">Execution Detail:</span>
+                <span x-text="nodeDetails[selectedNode].tech"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- SECTION B — DEVICE-SPECIFIC METHODS                         -->
+    <!-- ============================================================ -->
+    <div id="sec-b" class="space-y-6">
+        <div class="space-y-1">
+            <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[10px] font-extrabold uppercase tracking-wider">Section B</span>
+                <h2 class="text-xl font-extrabold text-slate-800">Device-Specific Sanitization Methods</h2>
+            </div>
+            <p class="text-xs text-slate-400 font-medium">Why different media architectures require custom hardware command families.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            <!-- Card 1: HDD -->
+            <div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-purity-card hover:shadow-xl transition space-y-4 flex flex-col justify-between">
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="w-10 h-10 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center font-bold text-lg">
+                            <i class="fa-solid fa-compact-disc"></i>
+                        </div>
+                        <span class="px-2.5 py-1 bg-slate-100 text-slate-700 text-[10px] font-bold rounded-lg uppercase">Magnetic Media</span>
+                    </div>
+                    <h3 class="text-base font-extrabold text-slate-800">1. HDD / Magnetic Drive</h3>
+                    
+                    <div class="space-y-2 text-xs">
+                        <div>
+                            <span class="font-bold text-slate-700">Why Different:</span>
+                            <p class="text-slate-500 text-[11px]">Data stored as magnetic domain alignments on platters accessed sequentially by LBAs.</p>
+                        </div>
+                        <div>
+                            <span class="font-bold text-slate-700">Recommended Approach:</span>
+                            <p class="text-slate-500 text-[11px]">Controlled raw binary sector overwriting (`os.fsync()`) or ATA SECURE ERASE hardware pulse.</p>
+                        </div>
+                        <div>
+                            <span class="font-bold text-slate-700">Command Family:</span>
+                            <code class="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-700">ATA SECURE ERASE / os.write(0x00)</code>
+                        </div>
+                        <div>
+                            <span class="font-bold text-slate-700">Verification:</span>
+                            <p class="text-slate-500 text-[11px]">Sector zero sampling at 0%, 25%, 50%, 75%, 100% offsets.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="pt-3 border-t border-slate-100 text-[10px] text-amber-700 bg-amber-50/50 p-3 rounded-xl space-y-1">
+                    <span class="font-bold block"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Remanence Note:</span>
+                    <span>Basic overwrite does NOT require AES/RSA/SHA-256. SHA-256 is an integrity hash, not an erasure algorithm.</span>
+                </div>
+            </div>
+
+            <!-- Card 2: SATA SSD -->
+            <div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-purity-card hover:shadow-xl transition space-y-4 flex flex-col justify-between">
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="w-10 h-10 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center font-bold text-lg">
+                            <i class="fa-solid fa-microchip"></i>
+                        </div>
+                        <span class="px-2.5 py-1 bg-teal-50 text-teal-700 text-[10px] font-bold rounded-lg uppercase">NAND Flash</span>
+                    </div>
+                    <h3 class="text-base font-extrabold text-slate-800">2. SATA SSD</h3>
+                    
+                    <div class="space-y-2 text-xs">
+                        <div>
+                            <span class="font-bold text-slate-700">Why Different:</span>
+                            <p class="text-slate-500 text-[11px]">FTL Wear Leveling & Garbage Collection mean ordinary LBA overwriting does NOT guarantee physical NAND block sanitization.</p>
+                        </div>
+                        <div>
+                            <span class="font-bold text-slate-700">Recommended Approach:</span>
+                            <p class="text-slate-500 text-[11px]">ATA Sanitize, Block Erase, or Cryptographic Erase if supported by FTL controller.</p>
+                        </div>
+                        <div>
+                            <span class="font-bold text-slate-700">Command Family:</span>
+                            <code class="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-700">ATA SANITIZE / BLOCK ERASE / CRYPTO PURGE</code>
+                        </div>
+                        <div>
+                            <span class="font-bold text-slate-700">Verification:</span>
+                            <p class="text-slate-500 text-[11px]">Controller status code check + addressable sector sampling.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="pt-3 border-t border-slate-100 text-[10px] text-teal-800 bg-teal-50/50 p-3 rounded-xl space-y-1">
+                    <span class="font-bold block">FTL Decision Flow:</span>
+                    <span>ATA Sanitize → Block Erase OR Cryptographic Erase (only when drive reports capability).</span>
+                </div>
+            </div>
+
+            <!-- Card 3: NVMe SSD -->
+            <div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-purity-card hover:shadow-xl transition space-y-4 flex flex-col justify-between">
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="w-10 h-10 rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center font-bold text-lg">
+                            <i class="fa-solid fa-bolt"></i>
+                        </div>
+                        <span class="px-2.5 py-1 bg-cyan-50 text-cyan-700 text-[10px] font-bold rounded-lg uppercase">PCIe NVMe</span>
+                    </div>
+                    <h3 class="text-base font-extrabold text-slate-800">3. NVMe SSD</h3>
+                    
+                    <div class="space-y-2 text-xs">
+                        <div>
+                            <span class="font-bold text-slate-700">Why Different:</span>
+                            <p class="text-slate-500 text-[11px]">High-speed NVMe controller manages hardware queues, namespaces, and native format capabilities.</p>
+                        </div>
+                        <div>
+                            <span class="font-bold text-slate-700">Recommended Approach:</span>
+                            <p class="text-slate-500 text-[11px]">NVMe Format NVM command with User Data Erase (SNASE=1) or Cryptographic Erase (SNASE=2).</p>
+                        </div>
+                        <div>
+                            <span class="font-bold text-slate-700">Command Family:</span>
+                            <code class="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-700">nvme format /dev/nvmeXn1 -s 1|2</code>
+                        </div>
+                        <div>
+                            <span class="font-bold text-slate-700">Verification:</span>
+                            <p class="text-slate-500 text-[11px]">NVMe controller completion status code + sector sampling verification.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="pt-3 border-t border-slate-100 text-[10px] text-cyan-800 bg-cyan-50/50 p-3 rounded-xl space-y-1">
+                    <span class="font-bold block">NVMe Execution Flow:</span>
+                    <span>NVMe SSD → Capability Detection → User Data Erase / Cryptographic Erase → Verification.</span>
+                </div>
+            </div>
+
+            <!-- Card 4: USB Flash Drive -->
+            <div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-purity-card hover:shadow-xl transition space-y-4 flex flex-col justify-between">
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-lg">
+                            <i class="fa-solid fa-usb"></i>
+                        </div>
+                        <span class="px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-lg uppercase">Removable Flash</span>
+                    </div>
+                    <h3 class="text-base font-extrabold text-slate-800">4. USB Flash Drive</h3>
+                    
+                    <div class="space-y-2 text-xs">
+                        <div>
+                            <span class="font-bold text-slate-700">Why Different:</span>
+                            <p class="text-slate-500 text-[11px]">USB Mass Storage bridge hides internal flash controller capabilities. Generic USB does not guarantee one universal method.</p>
+                        </div>
+                        <div>
+                            <span class="font-bold text-slate-700">Recommended Approach:</span>
+                            <p class="text-slate-500 text-[11px]">Multi-offset full binary zero pass + sector verification. Query USB capabilities dynamically.</p>
+                        </div>
+                        <div>
+                            <span class="font-bold text-slate-700">Command Family:</span>
+                            <code class="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-700">USB SCSI PASSTHROUGH / BINARY OVERWRITE</code>
+                        </div>
+                    </div>
+                </div>
+                <div class="pt-3 border-t border-slate-100 text-[10px] text-amber-800 bg-amber-50/50 p-3 rounded-xl space-y-1">
+                    <span class="font-bold block">Capability Detection Required:</span>
+                    <span>SENTINEL-X detects device capabilities dynamically before recommending sanitization.</span>
+                </div>
+            </div>
+
+            <!-- Card 5: SD / microSD -->
+            <div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-purity-card hover:shadow-xl transition space-y-4 flex flex-col justify-between">
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg">
+                            <i class="fa-solid fa-sd-card"></i>
+                        </div>
+                        <span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-lg uppercase">Memory Card</span>
+                    </div>
+                    <h3 class="text-base font-extrabold text-slate-800">5. SD / microSD Card</h3>
+                    
+                    <div class="space-y-2 text-xs">
+                        <div>
+                            <span class="font-bold text-slate-700">Why Different:</span>
+                            <p class="text-slate-500 text-[11px]">SD cards rely on raw flash microcontrollers; ordinary logical overwriting may leave unmapped blocks intact.</p>
+                        </div>
+                        <div>
+                            <span class="font-bold text-slate-700">Recommended Approach:</span>
+                            <p class="text-slate-500 text-[11px]">SD ERASE command (CMD38) if supported by host controller, or full zero fill + verification.</p>
+                        </div>
+                        <div>
+                            <span class="font-bold text-slate-700">Command Family:</span>
+                            <code class="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-700">SD CMD38 ERASE / RAW ZERO FILL</code>
+                        </div>
+                    </div>
+                </div>
+                <div class="pt-3 border-t border-slate-100 text-[10px] text-emerald-800 bg-emerald-50/50 p-3 rounded-xl space-y-1">
+                    <span class="font-bold block">Assurance Note:</span>
+                    <span>Logical overwriting cannot guarantee physical NAND sanitization without low-level SD bus ERASE support.</span>
+                </div>
+            </div>
+
+            <!-- Card 6: Encrypted Storage -->
+            <div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-purity-card hover:shadow-xl transition space-y-4 flex flex-col justify-between">
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg">
+                            <i class="fa-solid fa-key"></i>
+                        </div>
+                        <span class="px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded-lg uppercase">SED / Crypto Drive</span>
+                    </div>
+                    <h3 class="text-base font-extrabold text-slate-800">6. Encrypted Storage</h3>
+                    
+                    <div class="space-y-2 text-xs">
+                        <div>
+                            <span class="font-bold text-slate-700">Cryptographic Erase Flow:</span>
+                            <p class="text-slate-500 text-[11px]">Plaintext → Encryption → Ciphertext → Encryption Key sanitization → Data permanently unreadable.</p>
+                        </div>
+                        <div>
+                            <span class="font-bold text-slate-700">Recommended Approach:</span>
+                            <p class="text-slate-500 text-[11px]">Sanitize Media Encryption Key (MEK) inside hardware Security Subsystem.</p>
+                        </div>
+                        <div>
+                            <span class="font-bold text-slate-700">Command Family:</span>
+                            <code class="text-[10px] bg-slate-100 px-1.5 py-0.5 rounded font-mono text-slate-700">OPAL CRYPTO ERASE / MEK RE-KEYING</code>
+                        </div>
+                    </div>
+                </div>
+                <div class="pt-3 border-t border-slate-100 text-[10px] text-indigo-800 bg-indigo-50/50 p-3 rounded-xl space-y-1">
+                    <span class="font-bold block">Prerequisite Condition:</span>
+                    <span>Only appropriate when target drive architecture natively implements hardware-level encryption (SED).</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- SECTION C — "WHAT IS AN ALGORITHM AND WHAT IS NOT?"         -->
+    <!-- ============================================================ -->
+    <div id="sec-c" class="bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-purity-card space-y-6">
+        <div class="space-y-1">
+            <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[10px] font-extrabold uppercase tracking-wider">Section C</span>
+                <h2 class="text-xl font-extrabold text-slate-800">What is a Sanitization Algorithm vs What is Not?</h2>
+            </div>
+            <p class="text-xs text-slate-400 font-medium">Clearing common misunderstandings between data sanitization, cryptographic hashing, and immutable ledger logging.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            <!-- Card 1: Sanitization -->
+            <div class="bg-gradient-to-b from-teal-50 to-white border border-teal-200 rounded-2xl p-6 space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-[#4FD1C5] text-white flex items-center justify-center font-bold text-lg shadow-purity-teal">
+                    <i class="fa-solid fa-broom"></i>
+                </div>
+                <h3 class="text-sm font-extrabold text-slate-800">🧹 SANITIZATION</h3>
+                <p class="text-xs text-slate-600 leading-relaxed font-medium">
+                    Destroys or renders user data inaccessible using media/device-specific techniques (sector zeroing, ATA Secure Erase, NVMe Format, Crypto Erase).
+                </p>
+                <div class="pt-2 text-[10px] font-mono text-teal-700 font-bold border-t border-teal-100">
+                    NOT AES(), SHA256(), OR RSA()
+                </div>
+            </div>
+
+            <!-- Card 2: SHA-256 Hashing -->
+            <div class="bg-gradient-to-b from-slate-50 to-white border border-slate-200 rounded-2xl p-6 space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-slate-800 text-white flex items-center justify-center font-bold text-lg shadow-md">
+                    <i class="fa-solid fa-key"></i>
+                </div>
+                <h3 class="text-sm font-extrabold text-slate-800">🔐 SHA-256 HASHING</h3>
+                <p class="text-xs text-slate-600 leading-relaxed font-medium">
+                    Creates a 256-bit cryptographic fingerprint of files, evidence, and audit records. Proves integrity and detects post-operation alteration.
+                </p>
+                <div class="pt-2 text-[10px] font-mono text-slate-700 font-bold border-t border-slate-200">
+                    INTEGRITY FINGERPRINT, NOT ERASURE
+                </div>
+            </div>
+
+            <!-- Card 3: Immutable Ledger -->
+            <div class="bg-gradient-to-b from-cyan-50 to-white border border-cyan-200 rounded-2xl p-6 space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-cyan-600 text-white flex items-center justify-center font-bold text-lg shadow-md">
+                    <i class="fa-solid fa-cubes"></i>
+                </div>
+                <h3 class="text-sm font-extrabold text-slate-800">⛓️ IMMUTABLE LEDGER</h3>
+                <p class="text-xs text-slate-600 leading-relaxed font-medium">
+                    Records execution hashes in a tamper-evident chain (`Hash = SHA256(Event + PrevHash)`) so any retroactive modification is immediately flagged.
+                </p>
+                <div class="pt-2 text-[10px] font-mono text-cyan-800 font-bold border-t border-cyan-100">
+                    AUDIT ANCHOR, NOT DATA STORAGE
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- SECTION D — ADVANCED FILE RECOVERY PIPELINE                 -->
+    <!-- ============================================================ -->
+    <div id="sec-d" class="bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-purity-card space-y-6">
+        <div class="space-y-1">
+            <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[10px] font-extrabold uppercase tracking-wider">Section D</span>
+                <h2 class="text-xl font-extrabold text-slate-800">Advanced Read-Only File Recovery Pipeline</h2>
+            </div>
+            <p class="text-xs text-slate-400 font-medium">Signature-based file carving workflow for unallocated disk clusters.</p>
+        </div>
+
+        <!-- Pipeline Flow -->
+        <div class="flex flex-wrap gap-2 items-center justify-center py-4 bg-slate-50 border border-slate-200 rounded-2xl p-4 text-[11px] font-mono font-bold text-slate-700">
+            <span class="px-3 py-1.5 bg-white rounded-lg shadow-sm border border-slate-200">FORENSIC IMAGE</span>
+            <i class="fa-solid fa-arrow-right text-teal-500"></i>
+            <span class="px-3 py-1.5 bg-white rounded-lg shadow-sm border border-slate-200">SHA-256 HASH</span>
+            <i class="fa-solid fa-arrow-right text-teal-500"></i>
+            <span class="px-3 py-1.5 bg-white rounded-lg shadow-sm border border-slate-200">READ-ONLY SCANNING</span>
+            <i class="fa-solid fa-arrow-right text-teal-500"></i>
+            <span class="px-3 py-1.5 bg-white rounded-lg shadow-sm border border-slate-200">SIGNATURE DETECTION</span>
+            <i class="fa-solid fa-arrow-right text-teal-500"></i>
+            <span class="px-3 py-1.5 bg-white rounded-lg shadow-sm border border-slate-200">STRUCTURE VALIDATION</span>
+            <i class="fa-solid fa-arrow-right text-teal-500"></i>
+            <span class="px-3 py-1.5 bg-teal-50 text-teal-800 rounded-lg shadow-sm border border-teal-200">CONFIDENCE SCORE</span>
+            <i class="fa-solid fa-arrow-right text-teal-500"></i>
+            <span class="px-3 py-1.5 bg-slate-800 text-white rounded-lg shadow-sm">RECOVERED ARTIFACT</span>
+        </div>
+
+        <!-- Supported Formats Badges -->
+        <div class="space-y-2">
+            <span class="text-xs font-bold text-slate-700 uppercase tracking-wider block">Initial Supported File Formats:</span>
+            <div class="flex flex-wrap gap-2">
+                {% for fmt in supported_formats %}
+                <span class="px-3 py-1.5 rounded-xl bg-teal-50 text-teal-700 border border-teal-200/60 font-mono text-xs font-extrabold flex items-center space-x-1.5">
+                    <i class="fa-solid fa-file text-[10px]"></i>
+                    <span>{{ fmt }}</span>
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- SECTION E — CONFIDENCE SCORING                              -->
+    <!-- ============================================================ -->
+    <div id="sec-e" class="bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-purity-card space-y-6">
+        <div class="space-y-1">
+            <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[10px] font-extrabold uppercase tracking-wider">Section E</span>
+                <h2 class="text-xl font-extrabold text-slate-800">Analytical Confidence Scoring Model</h2>
+            </div>
+            <p class="text-xs text-slate-400 font-medium">Confidence score is an analytical estimate based on structural integrity and NOT proof of legal authenticity.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+            
+            <!-- Visual Score Example -->
+            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-4 font-mono">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="font-bold text-slate-700">Recovered File:</span>
+                    <span class="text-teal-700 font-extrabold">evidence_001.jpg</span>
+                </div>
+
+                <div class="space-y-1.5 text-xs text-slate-600">
+                    <div class="flex justify-between"><span>Magic Header Match:</span><span class="text-teal-600 font-bold">✓ MATCH (+25%)</span></div>
+                    <div class="flex justify-between"><span>Structure Header Validation:</span><span class="text-teal-600 font-bold">✓ VALID (+25%)</span></div>
+                    <div class="flex justify-between"><span>Footer / EOF Signature:</span><span class="text-teal-600 font-bold">✓ FOUND (+20%)</span></div>
+                    <div class="flex justify-between"><span>Decoder Parser Test:</span><span class="text-teal-600 font-bold">✓ PASSED (+15%)</span></div>
+                    <div class="flex justify-between"><span>Fragment Sequence Consistency:</span><span class="text-teal-600 font-bold">✓ HIGH (+9%)</span></div>
+                </div>
+
+                <div class="pt-3 border-t border-slate-200 space-y-2">
+                    <div class="flex justify-between text-xs font-extrabold">
+                        <span>CONFIDENCE SCORE:</span>
+                        <span class="text-teal-600">94% — HIGH CONFIDENCE</span>
+                    </div>
+                    <div class="w-full bg-slate-200 h-3 rounded-full overflow-hidden">
+                        <div class="bg-[#4FD1C5] h-full rounded-full w-[94%]"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scoring Rule Explanation -->
+            <div class="space-y-3 text-xs text-slate-600 leading-relaxed font-medium">
+                <h3 class="text-sm font-extrabold text-slate-800">Scoring Weight Distribution:</h3>
+                <ul class="space-y-2">
+                    <li class="flex items-start space-x-2">
+                        <i class="fa-solid fa-check text-teal-500 mt-0.5"></i>
+                        <span><strong class="text-slate-800">Magic Signature Match (+25%):</strong> Validates raw binary start offset (e.g. `FF D8 FF` for JPEG).</span>
+                    </li>
+                    <li class="flex items-start space-x-2">
+                        <i class="fa-solid fa-check text-teal-500 mt-0.5"></i>
+                        <span><strong class="text-slate-800">Internal Header Parsing (+25%):</strong> Confirms valid SOF0 markers, EXIF header tags, or PDF xref table offsets.</span>
+                    </li>
+                    <li class="flex items-start space-x-2">
+                        <i class="fa-solid fa-check text-teal-500 mt-0.5"></i>
+                        <span><strong class="text-slate-800">EOF / Trailer Match (+20%):</strong> Detects end-of-file bytes (e.g. `FF D9` for JPEG or `%%EOF` for PDF).</span>
+                    </li>
+                    <li class="flex items-start space-x-2">
+                        <i class="fa-solid fa-check text-teal-500 mt-0.5"></i>
+                        <span><strong class="text-slate-800">Decoder Validation (+15%):</strong> Passes binary stream into image/document decoders without crash.</span>
+                    </li>
+                </ul>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- SECTION F — EVIDENCE INTEGRITY                              -->
+    <!-- ============================================================ -->
+    <div id="sec-f" class="bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-purity-card space-y-6">
+        <div class="space-y-1">
+            <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[10px] font-extrabold uppercase tracking-wider">Section F</span>
+                <h2 class="text-xl font-extrabold text-slate-800">Evidence Integrity & Read-Only Handling</h2>
+            </div>
+            <p class="text-xs text-slate-400 font-medium">Original forensic evidence remains completely read-only during analysis to guarantee evidentiary admissibility.</p>
+        </div>
+
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6 text-center space-y-4">
+            <div class="flex flex-wrap items-center justify-center gap-3 font-mono text-xs font-bold text-slate-700">
+                <span class="px-3 py-2 bg-white rounded-xl shadow-xs border">Original Evidence</span>
+                <i class="fa-solid fa-arrow-right text-teal-500"></i>
+                <span class="px-3 py-2 bg-teal-50 text-teal-700 rounded-xl border border-teal-200">SHA-256 (Source Hash)</span>
+                <i class="fa-solid fa-arrow-right text-teal-500"></i>
+                <span class="px-3 py-2 bg-white rounded-xl shadow-xs border">Read-Only Carving</span>
+                <i class="fa-solid fa-arrow-right text-teal-500"></i>
+                <span class="px-3 py-2 bg-teal-50 text-teal-700 rounded-xl border border-teal-200">SHA-256 (Artifact Hash)</span>
+                <i class="fa-solid fa-arrow-right text-teal-500"></i>
+                <span class="px-3 py-2 bg-slate-800 text-white rounded-xl">Immutable Ledger</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- SECTION G — TAMPER-EVIDENT AUDIT CHAIN                     -->
+    <!-- ============================================================ -->
+    <div id="sec-g" class="bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-purity-card space-y-6">
+        <div class="space-y-1">
+            <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[10px] font-extrabold uppercase tracking-wider">Section G</span>
+                <h2 class="text-xl font-extrabold text-slate-800">Tamper-Evident Cryptographic Audit Chain</h2>
+            </div>
+            <p class="text-xs text-slate-400 font-medium">Mathematical hash chain formula: <code class="font-mono bg-slate-100 px-1.5 py-0.5 rounded text-teal-700">Hash_N = SHA256(Event_N + Hash_{N-1})</code></p>
+        </div>
+
+        <!-- Interactive Tamper Demo -->
+        <div class="bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-sm font-extrabold text-slate-800">Interactive Tamper Simulation</h3>
+                <button @click="toggleTamper()" :class="isTampered ? 'bg-rose-500 hover:bg-rose-600' : 'bg-teal-500 hover:bg-teal-600'" class="px-4 py-2 text-white font-bold text-xs rounded-xl shadow-md transition uppercase tracking-wider">
+                    <span x-text="isTampered ? 'Reset Chain to Valid' : 'Simulate Tamper on Event 2'"></span>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-xs">
+                <!-- Event 1 -->
+                <div class="bg-white border rounded-xl p-4 space-y-2 shadow-xs border-teal-200">
+                    <div class="flex justify-between items-center text-[10px] font-bold text-teal-700">
+                        <span>EVENT 1: DEVICE DETECTED</span>
+                        <span>VALID</span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 font-sans">Physical device drive scan completed.</p>
+                    <div class="text-[10px] text-slate-400 truncate">Hash 1: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855</div>
+                </div>
+
+                <!-- Event 2 -->
+                <div :class="isTampered ? 'bg-rose-50 border-rose-300' : 'bg-white border-teal-200'" class="border rounded-xl p-4 space-y-2 shadow-xs transition">
+                    <div class="flex justify-between items-center text-[10px] font-bold" :class="isTampered ? 'text-rose-700' : 'text-teal-700'">
+                        <span>EVENT 2: SANITIZE START</span>
+                        <span x-text="isTampered ? '🔴 TAMPERED' : 'VALID'"></span>
+                    </div>
+                    <p class="text-[11px] font-sans" :class="isTampered ? 'text-rose-600 font-bold' : 'text-slate-500'" x-text="isTampered ? 'MODIFIED BY ATTACKER (Payload altered)' : 'Sector Zeroing initiated on target LBA 0.'"></p>
+                    <div class="text-[10px] truncate" :class="isTampered ? 'text-rose-600 font-bold' : 'text-slate-400'" x-text="isTampered ? 'Hash 2: 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08 (CHANGED)' : 'Hash 2: 8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92'"></div>
+                </div>
+
+                <!-- Event 3 -->
+                <div :class="isTampered ? 'bg-rose-50 border-rose-300' : 'bg-white border-teal-200'" class="border rounded-xl p-4 space-y-2 shadow-xs transition">
+                    <div class="flex justify-between items-center text-[10px] font-bold" :class="isTampered ? 'text-rose-700' : 'text-teal-700'">
+                        <span>EVENT 3: VERIFICATION PASS</span>
+                        <span x-text="isTampered ? '🔴 MISMATCH' : 'VALID'"></span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 font-sans">Sector zero sampling verification completed.</p>
+                    <div class="text-[10px] truncate" :class="isTampered ? 'text-rose-600 font-bold' : 'text-slate-400'" x-text="isTampered ? 'Hash 3: MISMATCH (Chain broken at Event 2)' : 'Hash 3: 4b227777d4d1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a4'"></div>
+                </div>
+            </div>
+
+            <div x-show="isTampered" class="p-3 bg-rose-100 border border-rose-200 text-rose-800 rounded-xl text-xs font-bold flex items-center space-x-2">
+                <i class="fa-solid fa-triangle-exclamation text-rose-600"></i>
+                <span>🔴 TAMPERING DETECTED! Altering Event 2 broke Hash 2 and caused Hash 3 verification mismatch across the ledger chain.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- SECTION H — BLOCKCHAIN / IMMUTABLE LEDGER                  -->
+    <!-- ============================================================ -->
+    <div id="sec-h" class="bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-purity-card space-y-6">
+        <div class="space-y-1">
+            <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[10px] font-extrabold uppercase tracking-wider">Section H</span>
+                <h2 class="text-xl font-extrabold text-slate-800">Immutable Ledger Architecture</h2>
+            </div>
+            <p class="text-xs text-slate-400 font-medium">SENTINEL-X does NOT store raw evidence or recovered files on blockchain. Only cryptographic hashes and operation metadata are anchored.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3 text-xs text-slate-600">
+                <h3 class="font-bold text-slate-800">Anchored Metadata Structure:</h3>
+                <ul class="space-y-1.5 font-mono text-[11px]">
+                    <li>• Operation ID (`UUIDv4`)</li>
+                    <li>• Event Hash (`SHA-256`)</li>
+                    <li>• PDF Report Hash (`SHA-256`)</li>
+                    <li>• ISO Timestamp (`UTC`)</li>
+                    <li>• Ledger Block Reference (`Index + PrevHash`)</li>
+                </ul>
+            </div>
+
+            <div class="bg-teal-50/50 border border-teal-200 rounded-2xl p-5 space-y-3 text-xs">
+                <h3 class="font-bold text-teal-800">Verification Match / Mismatch:</h3>
+                <div class="p-3 bg-white rounded-xl border border-teal-200 font-mono text-[11px] space-y-1">
+                    <div class="text-teal-700 font-bold">✓ MATCH: SHA256(Current Audit) == Ledger Entry Hash</div>
+                    <div class="text-rose-600 font-bold">🔴 MISMATCH: SHA256(Current Audit) != Ledger Entry Hash</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- SECTION I — NIST SANITIZATION MODEL                         -->
+    <!-- ============================================================ -->
+    <div id="sec-i" class="bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-purity-card space-y-6">
+        <div class="space-y-1">
+            <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[10px] font-extrabold uppercase tracking-wider">Section I</span>
+                <h2 class="text-xl font-extrabold text-slate-800">NIST SP 800-88 Rev. 2 Policy Model</h2>
+            </div>
+            <p class="text-xs text-slate-400 font-medium">Standardized sanitization category definitions for media disposition.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="border border-slate-200 rounded-2xl p-5 space-y-2 bg-slate-50">
+                <span class="px-2.5 py-1 bg-slate-200 text-slate-700 text-[10px] font-bold rounded-lg uppercase">Category 01</span>
+                <h3 class="text-sm font-extrabold text-slate-800">CLEAR</h3>
+                <p class="text-[11px] text-slate-500 leading-relaxed font-medium">Overwrites logical blocks using basic read/write interface against non-advanced data recovery tools.</p>
+            </div>
+
+            <div class="border border-teal-200 rounded-2xl p-5 space-y-2 bg-teal-50/40">
+                <span class="px-2.5 py-1 bg-teal-100 text-teal-800 text-[10px] font-bold rounded-lg uppercase">Category 02</span>
+                <h3 class="text-sm font-extrabold text-slate-800">PURGE</h3>
+                <p class="text-[11px] text-slate-500 leading-relaxed font-medium">Executes controller-level ATA Sanitize or NVMe Format commands rendering target data unrecoverable even in laboratory environment.</p>
+            </div>
+
+            <div class="border border-cyan-200 rounded-2xl p-5 space-y-2 bg-cyan-50/40">
+                <span class="px-2.5 py-1 bg-cyan-100 text-cyan-800 text-[10px] font-bold rounded-lg uppercase">Category 03</span>
+                <h3 class="text-sm font-extrabold text-slate-800">CRYPTOGRAPHIC ERASE</h3>
+                <p class="text-[11px] text-slate-500 leading-relaxed font-medium">Sanitizes the Media Encryption Key (MEK) on self-encrypting drives (SED), rendering ciphertext permanently unreadable.</p>
+            </div>
+
+            <div class="border border-rose-200 rounded-2xl p-5 space-y-2 bg-rose-50/40">
+                <span class="px-2.5 py-1 bg-rose-100 text-rose-800 text-[10px] font-bold rounded-lg uppercase">Category 04</span>
+                <h3 class="text-sm font-extrabold text-slate-800">DESTROY</h3>
+                <p class="text-[11px] text-slate-500 leading-relaxed font-medium">Physical destruction of target media platters or NAND chips via disintegration, incineration, or degaussing.</p>
+            </div>
+        </div>
+
+        <div class="p-4 bg-amber-50 border border-amber-200/80 rounded-2xl text-xs text-amber-800 space-y-1">
+            <span class="font-extrabold flex items-center space-x-1.5">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+                <span>NIST Assurance Disclaimer:</span>
+            </span>
+            <p class="font-medium text-[11px] leading-relaxed">
+                "Sanitization assurance depends on media type, device capabilities, selected technique, and post-operation verification." Reference label: NIST SP 800-88 Rev. 2.
+            </p>
+        </div>
+    </div>
+
+    <!-- ============================================================ -->
+    <!-- SECTION J — COMPLETE SENTINEL-X ARCHITECTURE               -->
+    <!-- ============================================================ -->
+    <div id="sec-j" class="bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-purity-card space-y-6">
+        <div class="space-y-1">
+            <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[10px] font-extrabold uppercase tracking-wider">Section J</span>
+                <h2 class="text-xl font-extrabold text-slate-800">Complete SENTINEL-X System Architecture</h2>
+            </div>
+            <p class="text-xs text-slate-400 font-medium">High-level components and data orchestrator flow diagram.</p>
+        </div>
+
+        <div class="bg-slate-900 rounded-2xl p-6 text-white overflow-x-auto font-mono text-xs">
+            <div class="text-center text-teal-400 font-bold mb-4">=== SENTINEL-X INTEGRATED PLATFORM ARCHITECTURE ===</div>
+            <pre class="text-slate-300 leading-snug">
+                                 +------------------------+
+                                 |   Django Web UI / UX   |
+                                 +-----------+------------+
+                                             |
+                                 +-----------v------------+
+                                 |     REST API Layer     |
+                                 +-----------+------------+
+                                             |
+                                 +-----------v------------+
+                                 | Operation Orchestrator |
+                                 +-----------+------------+
+                                             |
+                 +---------------------------+---------------------------+
+                 |                           |                           |
+     +-----------v------------+  +-----------v------------+  +-----------v------------+
+     |  Sanitization Worker   |  |   File Eraser Worker   |  |  Recovery Engine Work  |
+     +-----------+------------+  +-----------+------------+  +-----------+------------+
+                 |                           |                           |
+                 +---------------------------+---------------------------+
+                                             |
+                                 +-----------v------------+
+                                 |  Verification Engine   |
+                                 +-----------+------------+
+                                             |
+                                 +-----------v------------+
+                                 |    Evidence Manager    |
+                                 +-----------+------------+
+                                             |
+                                 +-----------v------------+
+                                 |     SHA-256 Engine     |
+                                 +-----------+------------+
+                                             |
+                                 +-----------v------------+
+                                 | Audit & Tamper Chain   |
+                                 +-----------+------------+
+                                             |
+                                 +-----------v------------+
+                                 |   Immutable Ledger     |
+                                 +-----------+------------+
+                                             |
+                                 +-----------v------------+
+                                 |   PDF Reports & Certs  |
+                                 +------------------------+
+            </pre>
+        </div>
+    </div>
+
+</div>
+
+<script>
+function technologyPage() {
+    return {
+        selectedNode: 'storage',
+        isTampered: false,
+        toggleTamper() {
+            this.isTampered = !this.isTampered;
+        },
+        nodeDetails: {
+            storage: {
+                title: "Physical Target Disk / Block Media",
+                desc: "Queries physical raw disk drives or mounted partition blocks across Windows WMI (Win32_DiskDrive) and Linux block devices.",
+                tech: "os.open(drive_path, 'r+b') / WMI PhysicalMedia Query"
+            },
+            detection: {
+                title: "Device Detection Engine",
+                desc: "Enumerates hardware bus type, SMART flags, physical sector size, serial numbers, controller interface, and capabilities.",
+                tech: "workers/device_worker/detector.py"
+            },
+            capabilities: {
+                title: "Media & Capability Check",
+                desc: "Checks whether target media supports ATA Sanitize, NVMe Format, User Data Erase, Cryptographic Key Purge, or basic Zero Fill.",
+                tech: "Capability Flags: supports_sanitize, supports_crypto_erase"
+            },
+            policy: {
+                title: "Sanitization Policy Engine",
+                desc: "Evaluates media architecture against NIST SP 800-88 Rev. 2 guidance and recommends Clear, Purge, or Crypto Erase.",
+                tech: "apps/sanitization/views.py -> Policy Evaluator"
+            },
+            branch_hdd: {
+                title: "HDD Magnetic Track",
+                desc: "Executes raw binary sector overwriting with os.fsync() cache flushing or ATA SECURE ERASE hardware pulse.",
+                tech: "workers/sanitization_worker/engine.py (Sector Zeroing)"
+            },
+            branch_sata: {
+                title: "SATA SSD NAND Track",
+                desc: "Executes ATA SANITIZE or Block Erase to purge FTL mapped blocks and unmapped wear-leveling spare blocks.",
+                tech: "ATA Sanitize / FTL Block Erase Command"
+            },
+            branch_nvme: {
+                title: "NVMe PCIe SSD Track",
+                desc: "Executes native NVMe Format NVM command with User Data Erase (SNASE=1) or Cryptographic Erase (SNASE=2).",
+                tech: "NVMe Format Command Passthrough"
+            },
+            verification: {
+                title: "Post-Op Sampling Verification",
+                desc: "Reads binary sector blocks at 0%, 25%, 50%, 75%, and 100% offsets to verify zero non-zero bytes remain.",
+                tech: "apps/verification/ -> zero_byte_sampling_check()"
+            },
+            audit_report: {
+                title: "Audit Log & Report Certificate",
+                desc: "Generates cryptographic SHA-256 operation hash and builds signed PDF certificate for evidence record.",
+                tech: "apps/reports/ -> ReportGenerator (PDF)"
+            },
+            immutable_record: {
+                title: "Immutable Ledger Commit",
+                desc: "Appends audit entry to ledger block chain with previous block hash anchoring for tamper detection.",
+                tech: "apps/ledger/models.py -> LedgerEntry.commit_block()"
+            }
+        }
+    }
+}
+</script>
+{% endblock %}

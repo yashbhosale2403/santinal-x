@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard | SENTINEL-X Platform{% endblock %}
+{% block breadcrumb %}Dashboard{% endblock %}
+
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- 4 Purity UI Metric Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+
+        <!-- Card 1 -->
+        <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-purity-card flex items-center justify-between">
+            <div class="space-y-1">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Connected Devices</span>
+                <div class="flex items-baseline space-x-2">
+                    <span class="text-2xl font-extrabold text-slate-800 tracking-tight">{{ devices_count }}</span>
+                    <span class="text-xs font-bold text-teal-600">+100%</span>
+                </div>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-[#4FD1C5] text-white flex items-center justify-center font-bold text-lg shadow-purity-teal shrink-0">
+                <i class="fa-solid fa-hard-drive"></i>
+            </div>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-purity-card flex items-center justify-between">
+            <div class="space-y-1">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Operations</span>
+                <div class="flex items-baseline space-x-2">
+                    <span class="text-2xl font-extrabold text-slate-800 tracking-tight">{{ sanitization_count }}</span>
+                    <span class="text-xs font-bold text-teal-600">+5%</span>
+                </div>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-[#4FD1C5] text-white flex items-center justify-center font-bold text-lg shadow-purity-teal shrink-0">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-purity-card flex items-center justify-between">
+            <div class="space-y-1">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Carved Files</span>
+                <div class="flex items-baseline space-x-2">
+                    <span class="text-2xl font-extrabold text-slate-800 tracking-tight">{{ recovered_files_count }}</span>
+                    <span class="text-xs font-bold text-teal-600">+12%</span>
+                </div>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-[#4FD1C5] text-white flex items-center justify-center font-bold text-lg shadow-purity-teal shrink-0">
+                <i class="fa-solid fa-file-shield"></i>
+            </div>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="bg-white border border-slate-100 rounded-2xl p-5 shadow-purity-card flex items-center justify-between">
+            <div class="space-y-1">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Integrity Status</span>
+                <div class="flex items-baseline space-x-2">
+                    <span class="text-2xl font-extrabold text-teal-600 tracking-tight">100%</span>
+                    <span class="text-xs font-bold text-teal-600">Verified</span>
+                </div>
+            </div>
+            <div class="w-12 h-12 rounded-2xl bg-[#4FD1C5] text-white flex items-center justify-center font-bold text-lg shadow-purity-teal shrink-0">
+                <i class="fa-solid fa-shield-check"></i>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Purity UI Signature Hero Banner Card -->
+    <div class="bg-gradient-to-r from-teal-500 via-teal-400 to-cyan-500 rounded-3xl p-8 text-white shadow-xl shadow-teal-500/20 relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div class="space-y-2 max-w-xl z-10">
+            <span class="text-xs font-bold uppercase tracking-widest text-teal-100 font-mono">Built for Digital Forensics</span>
+            <h2 class="text-3xl font-extrabold tracking-tight">SENTINEL-X Purity Engine</h2>
+            <p class="text-xs text-teal-50 opacity-90 leading-relaxed font-medium">
+                Integrated NIST SP 800-88 Rev. 2 drive sanitization, read-only signature carving, and cryptographic SHA-256 tamper-evident audit logs.
+            </p>
+            <div class="pt-4 flex items-center space-x-3">
+                <a href="/sanitization/" class="px-5 py-2.5 bg-white text-teal-700 font-extrabold text-xs rounded-xl shadow-md hover:bg-teal-50 transition uppercase tracking-wider">
+                    Sanitize Storage
+                </a>
+                <a href="/recovery/" class="px-5 py-2.5 bg-white/20 hover:bg-white/30 text-white font-extrabold text-xs rounded-xl transition uppercase tracking-wider backdrop-blur-xs">
+                    Carve Evidence
+                </a>
+            </div>
+        </div>
+
+        <div class="w-48 h-48 rounded-full bg-white/10 absolute -right-10 -bottom-10 blur-2xl pointer-events-none"></div>
+    </div>
+
+    <!-- 3 Quick Action Launch Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <div class="bg-white border border-slate-100 rounded-2xl p-6 shadow-purity-card hover:shadow-xl transition space-y-4 flex flex-col justify-between">
+            <div class="space-y-2">
+                <div class="w-10 h-10 rounded-xl bg-teal-50 text-[#4FD1C5] flex items-center justify-center font-bold text-base">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <h3 class="text-base font-bold text-slate-800">Secure Drive Eraser</h3>
+                <p class="text-xs text-slate-400 font-medium leading-relaxed">
+                    NIST SP 800-88 Rev. 2 policy decision engine for HDD, SATA/NVMe SSD, and USB flash drives.
+                </p>
+            </div>
+            <a href="/sanitization/" class="w-full py-2.5 bg-[#4FD1C5] hover:bg-teal-500 text-white font-bold text-xs rounded-xl shadow-purity-teal transition text-center uppercase tracking-wider">
+                Start Sanitization
+            </a>
+        </div>
+
+        <div class="bg-white border border-slate-100 rounded-2xl p-6 shadow-purity-card hover:shadow-xl transition space-y-4 flex flex-col justify-between">
+            <div class="space-y-2">
+                <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-800 flex items-center justify-center font-bold text-base">
+                    <i class="fa-solid fa-microscope"></i>
+                </div>
+                <h3 class="text-base font-bold text-slate-800">Forensic File Carving</h3>
+                <p class="text-xs text-slate-400 font-medium leading-relaxed">
+                    Read-only signature matching and structure parsing with analytical confidence scoring.
+                </p>
+            </div>
+            <a href="/recovery/" class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl shadow-md transition text-center uppercase tracking-wider">
+                Start Carving
+            </a>
+        </div>
+
+        <div class="bg-white border border-slate-100 rounded-2xl p-6 shadow-purity-card hover:shadow-xl transition space-y-4 flex flex-col justify-between">
+            <div class="space-y-2">
+                <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-800 flex items-center justify-center font-bold text-base">
+                    <i class="fa-solid fa-link-slash"></i>
+                </div>
+                <h3 class="text-base font-bold text-slate-800">Verify Audit Chain</h3>
+                <p class="text-xs text-slate-400 font-medium leading-relaxed">
+                    Cryptographic SHA-256 hash chain verification (`hash = SHA256(data + prev_hash)`).
+                </p>
+            </div>
+            <a href="/integrity/" class="w-full py-2.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold text-xs rounded-xl shadow-xs transition text-center uppercase tracking-wider">
+                Verify Integrity
+            </a>
+        </div>
+
+    </div>
+
+    <!-- 2 Knowledge & Technology Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <div class="bg-white border border-slate-100 rounded-2xl p-6 shadow-purity-card hover:shadow-xl transition space-y-4 flex flex-col justify-between">
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <div class="w-10 h-10 rounded-xl bg-teal-50 text-[#4FD1C5] flex items-center justify-center font-bold text-base">
+                        <i class="fa-solid fa-brain"></i>
+                    </div>
+                    <span class="px-2.5 py-1 bg-teal-50 text-teal-700 text-[10px] font-extrabold rounded-full uppercase tracking-wider">Architecture</span>
+                </div>
+                <h3 class="text-base font-bold text-slate-800">Technology & Methods</h3>
+                <p class="text-xs text-slate-400 font-medium leading-relaxed">
+                    Understand the technologies, sanitization decision engine, forensic recovery pipeline, verification engine, and integrity architecture.
+                </p>
+            </div>
+            <a href="/technology/" class="w-full py-2.5 bg-[#4FD1C5] hover:bg-teal-500 text-white font-bold text-xs rounded-xl shadow-purity-teal transition text-center uppercase tracking-wider flex items-center justify-center space-x-1.5">
+                <span>Explore Technology</span>
+                <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </a>
+        </div>
+
+        <div class="bg-white border border-slate-100 rounded-2xl p-6 shadow-purity-card hover:shadow-xl transition space-y-4 flex flex-col justify-between">
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-800 flex items-center justify-center font-bold text-base">
+                        <i class="fa-solid fa-book-bookmark"></i>
+                    </div>
+                    <span class="px-2.5 py-1 bg-slate-100 text-slate-700 text-[10px] font-extrabold rounded-full uppercase tracking-wider">NIST SP 800-88</span>
+                </div>
+                <h3 class="text-base font-bold text-slate-800">Technical Documentation</h3>
+                <p class="text-xs text-slate-400 font-medium leading-relaxed">
+                    Read the complete SENTINEL-X technical architecture, NIST SP 800-88 Rev. 2 guidelines, and sanitization methodology.
+                </p>
+            </div>
+            <a href="/documentation/" class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl shadow-md transition text-center uppercase tracking-wider flex items-center justify-center space-x-1.5">
+                <span>Open Documentation</span>
+                <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </a>
+        </div>
+
+    </div>
+
+    <!-- Purity UI Tables & Timeline Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- Recent Activity Table -->
+        <div class="bg-white border border-slate-100 rounded-2xl p-6 shadow-purity-card space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider">Audit Activity Trail</h3>
+                <a href="/audit/" class="text-xs font-bold text-[#4FD1C5] hover:underline">View All</a>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs font-sans text-slate-600">
+                    <thead class="bg-slate-50 text-slate-400 text-[10px] font-extrabold uppercase tracking-wider">
+                        <tr>
+                            <th class="py-2.5 px-3">Timestamp</th>
+                            <th class="py-2.5 px-3">Event Type</th>
+                            <th class="py-2.5 px-3">SHA-256 Hash</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for a in recent_audits %}
+                        <tr class="hover:bg-slate-50/60 font-mono text-[11px]">
+                            <td class="py-2.5 px-3 text-slate-400 font-sans">{{ a.timestamp|date:"H:i:s" }}</td>
+                            <td class="py-2.5 px-3 font-bold font-sans text-slate-800">{{ a.event_type }}</td>
+                            <td class="py-2.5 px-3 text-teal-600 font-bold">{{ a.event_hash|slice:":16" }}...</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="py-4 text-center text-slate-400 font-sans">No audit events recorded yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Recent Carved Artifacts -->
+        <div class="bg-white border border-slate-100 rounded-2xl p-6 shadow-purity-card space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider">Recently Carved Artifacts</h3>
+                <a href="/recovery/" class="text-xs font-bold text-[#4FD1C5] hover:underline">View All</a>
+            </div>
+
+            <div class="space-y-3 text-xs font-sans">
+                {% for rf in recent_recoveries %}
+                <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                    <div class="flex items-center space-x-3 truncate">
+                        <div class="w-8 h-8 rounded-xl bg-teal-50 text-[#4FD1C5] flex items-center justify-center font-bold text-xs shrink-0">
+                            <i class="fa-solid {% if rf.classification == 'IMAGE' %}fa-file-image{% elif rf.classification == 'DOCUMENT' %}fa-file-pdf{% else %}fa-file{% endif %}"></i>
+                        </div>
+                        <div class="truncate">
+                            <span class="font-bold text-slate-800 block truncate">{{ rf.filename }}</span>
+                            <span class="text-[10px] text-slate-400 font-mono block">{{ rf.detected_type }} · {{ rf.size_bytes }} Bytes</span>
+                        </div>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-teal-50 text-teal-700 border border-teal-200/80">
+                        {{ rf.confidence_score }}% Confidence
+                    </span>
+                </div>
+                {% empty %}
+                <p class="text-slate-400 text-center py-4">No carved files recovered yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

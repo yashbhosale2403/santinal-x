@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block title %}Technical Documentation | SENTINEL-X{% endblock %}
+{% block breadcrumb %}Technical Documentation{% endblock %}
+
+{% block content %}
+<!-- Marked.js for client-side Markdown rendering -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<style>
+@media print {
+    aside, header, nav, .no-print { display: none !important; }
+    main { width: 100% !important; padding: 0 !important; }
+    .print-doc-container { border: none !important; box-shadow: none !important; }
+}
+.markdown-body h1 { font-size: 1.5rem; font-weight: 800; color: #1e293b; margin-top: 1.5rem; margin-bottom: 0.75rem; }
+.markdown-body h2 { font-size: 1.25rem; font-weight: 800; color: #0f766e; margin-top: 1.5rem; margin-bottom: 0.75rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.25rem; }
+.markdown-body h3 { font-size: 1rem; font-weight: 700; color: #334155; margin-top: 1rem; margin-bottom: 0.5rem; }
+.markdown-body p { margin-bottom: 0.75rem; font-size: 0.875rem; line-height: 1.6; color: #475569; }
+.markdown-body ul, .markdown-body ol { margin-left: 1.25rem; margin-bottom: 0.75rem; font-size: 0.875rem; color: #475569; list-style-type: disc; }
+.markdown-body code { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; background-color: #f1f5f9; color: #0f766e; padding: 0.15rem 0.4rem; rounded: 0.25rem; }
+.markdown-body pre { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; background-color: #0f172a; color: #e2e8f0; padding: 1rem; rounded-xl: 0.75rem; overflow-x: auto; margin-bottom: 1rem; border-radius: 0.75rem; }
+.markdown-body blockquote { border-left: 3px solid #4FD1C5; padding-left: 1rem; font-style: italic; color: #64748b; margin-bottom: 0.75rem; }
+</style>
+
+<div class="space-y-6" x-data="docViewer()">
+
+    <!-- Metadata Top Card -->
+    <div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-purity-card flex flex-col md:flex-row items-start md:items-center justify-between gap-6 no-print">
+        <div class="space-y-2">
+            <div class="flex flex-wrap items-center gap-2">
+                <span class="px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[10px] font-extrabold uppercase tracking-wider">{{ metadata.document_type }}</span>
+                <span class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold">Project: {{ metadata.project }}</span>
+                <span class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold">Platform: {{ metadata.platform }}</span>
+                <span class="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold">Theme: {{ metadata.theme }}</span>
+                <span class="px-2.5 py-0.5 rounded-full bg-teal-500 text-white text-[10px] font-bold">{{ metadata.version }}</span>
+            </div>
+            <h1 class="text-2xl font-extrabold text-slate-800 tracking-tight">SENTINEL-X — Technical Architecture & Methodology</h1>
+            <p class="text-xs text-slate-400 font-medium flex items-center space-x-2">
+                <i class="fa-solid fa-certificate text-teal-500"></i>
+                <span>Reference: <strong>{{ metadata.reference }}</strong></span>
+            </p>
+        </div>
+
+        <!-- Action Toolbar -->
+        <div class="flex items-center space-x-2 shrink-0">
+            <button @click="copySnippet()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl shadow-xs transition flex items-center space-x-1.5" title="Copy Raw Documentation">
+                <i class="fa-solid fa-copy"></i>
+                <span>Copy</span>
+            </button>
+            <button @click="downloadDoc()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl shadow-xs transition flex items-center space-x-1.5" title="Download Markdown (.md)">
+                <i class="fa-solid fa-download"></i>
+                <span>Download .md</span>
+            </button>
+            <button @click="window.print()" class="px-3.5 py-2 bg-[#4FD1C5] hover:bg-teal-500 text-white font-bold text-xs rounded-xl shadow-purity-teal transition flex items-center space-x-1.5" title="Print Documentation">
+                <i class="fa-solid fa-print"></i>
+                <span>Print</span>
+            </button>
+        </div>
+    </div>
+
+    {% if error_message %}
+    <!-- Error Fallback -->
+    <div class="p-6 bg-rose-50 border border-rose-200 rounded-3xl text-rose-700 space-y-2">
+        <div class="font-extrabold text-sm flex items-center space-x-2">
+            <i class="fa-solid fa-circle-exclamation text-rose-500"></i>
+            <span>Documentation Loading Error</span>
+        </div>
+        <p class="text-xs font-medium">{{ error_message }}</p>
+    </div>
+    {% else %}
+
+    <!-- Main Layout Grid: Sidebar TOC + Content Viewer -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- Left Column: Search & Table of Contents (TOC) -->
+        <div class="lg:col-span-4 bg-white border border-slate-100 rounded-3xl p-5 shadow-purity-card space-y-4 no-print sticky top-4">
+            
+            <!-- Search Box -->
+            <div class="space-y-1">
+                <label class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Search Documentation</label>
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs absolute left-3.5 top-3"></i>
+                    <input type="text" x-model="searchQuery" placeholder="Filter sections, ATA, NVMe..." class="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 outline-none focus:border-teal-500 transition">
+                </div>
+            </div>
+
+            <div class="h-px bg-slate-100"></div>
+
+            <!-- TOC List -->
+            <div class="space-y-1">
+                <div class="flex items-center justify-between text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-2">
+                    <span>Contents</span>
+                    <span x-text="filteredSections.length + ' sections'"></span>
+                </div>
+
+                <div class="max-h-[calc(100vh-280px)] overflow-y-auto space-y-1 pr-1 text-xs font-bold">
+                    <template x-for="(sec, idx) in filteredSections" :key="idx">
+                        <button @click="scrollToSection(sec.id)" :class="activeSection === sec.id ? 'bg-[#4FD1C5] text-white shadow-purity-teal' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'" class="w-full text-left px-3 py-2.5 rounded-xl transition flex items-center justify-between group">
+                            <span class="truncate font-semibold text-xs" x-text="sec.title"></span>
+                            <i class="fa-solid fa-chevron-right text-[10px] opacity-0 group-hover:opacity-100 transition" :class="activeSection === sec.id ? 'opacity-100 text-white' : 'text-slate-400'"></i>
+                        </button>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Document Content Viewer -->
+        <div class="lg:col-span-8 bg-white border border-slate-100 rounded-3xl p-6 sm:p-8 shadow-purity-card space-y-6 print-doc-container">
+            
+            <!-- Raw content container parsed by Marked.js -->
+            <div id="markdown-render-target" class="markdown-body">
+                <!-- Rendered markdown inserts here -->
+            </div>
+
+            <!-- Footer Section Navigation -->
+            <div class="pt-6 border-t border-slate-100 flex items-center justify-between no-print text-xs font-bold">
+                <button @click="prevSection()" :disabled="activeIdx <= 0" class="px-4 py-2 bg-slate-50 hover:bg-slate-100 disabled:opacity-40 text-slate-700 rounded-xl transition flex items-center space-x-2">
+                    <i class="fa-solid fa-arrow-left text-xs"></i>
+                    <span>Previous Section</span>
+                </button>
+
+                <span class="text-slate-400 text-[11px]" x-text="'Section ' + (activeIdx + 1) + ' of ' + sections.length"></span>
+
+                <button @click="nextSection()" :disabled="activeIdx >= sections.length - 1" class="px-4 py-2 bg-slate-50 hover:bg-slate-100 disabled:opacity-40 text-slate-700 rounded-xl transition flex items-center space-x-2">
+                    <span>Next Section</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </button>
+            </div>
+
+        </div>
+
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- Hidden Raw Content for Client JS -->
+<script id="raw-doc-content" type="text/plain">
+{{ doc_content|safe }}
+</script>
+
+<script>
+function docViewer() {
+    return {
+        rawContent: '',
+        searchQuery: '',
+        sections: [],
+        activeSection: '',
+        activeIdx: 0,
+
+        init() {
+            const raw = document.getElementById('raw-doc-content');
+            if (raw) {
+                this.rawContent = raw.textContent;
+                this.renderMarkdown();
+                this.extractSections();
+            }
+        },
+
+        renderMarkdown() {
+            const target = document.getElementById('markdown-render-target');
+            if (target && typeof marked !== 'undefined') {
+                target.innerHTML = marked.parse(this.rawContent);
+            }
+        },
+
+        extractSections() {
+            const regex = /^##\s+(.+)$/gm;
+            let match;
+            this.sections = [];
+            let idCounter = 1;
+            while ((match = regex.exec(this.rawContent)) !== null) {
+                const title = match[1].trim();
+                const secId = 'sec-' + idCounter++;
+                this.sections.push({ id: secId, title: title });
+            }
+            if (this.sections.length > 0) {
+                this.activeSection = this.sections[0].id;
+                this.activeIdx = 0;
+            }
+
+            // Assign IDs to rendered H2 elements
+            setTimeout(() => {
+                const h2Elements = document.querySelectorAll('#markdown-render-target h2');
+                h2Elements.forEach((h2, idx) => {
+                    if (this.sections[idx]) {
+                        h2.id = this.sections[idx].id;
+                    }
+                });
+            }, 100);
+        },
+
+        get filteredSections() {
+            if (!this.searchQuery) return this.sections;
+            const q = this.searchQuery.toLowerCase();
+            return this.sections.filter(s => s.title.toLowerCase().includes(q));
+        },
+
+        scrollToSection(secId) {
+            this.activeSection = secId;
+            this.activeIdx = this.sections.findIndex(s => s.id === secId);
+            const el = document.getElementById(secId);
+            if (el) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        },
+
+        prevSection() {
+            if (this.activeIdx > 0) {
+                this.activeIdx--;
+                this.scrollToSection(this.sections[this.activeIdx].id);
+            }
+        },
+
+        nextSection() {
+            if (this.activeIdx < this.sections.length - 1) {
+                this.activeIdx++;
+                this.scrollToSection(this.sections[this.activeIdx].id);
+            }
+        },
+
+        copySnippet() {
+            navigator.clipboard.writeText(this.rawContent);
+            alert('Documentation raw Markdown copied to clipboard!');
+        },
+
+        downloadDoc() {
+            const blob = new Blob([this.rawContent], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'sentinelx-technical-documentation.md';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+    }
+}
+</script>
+{% endblock %}

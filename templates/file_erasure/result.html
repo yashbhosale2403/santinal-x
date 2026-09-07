@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}File Erasure Result | SENTINEL-X{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-4xl mx-auto">
+
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-100 flex items-center gap-3">
+                <i class="fa-solid fa-circle-check text-emerald-400"></i> File Erasure Completed & Verified
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">Pre-operation inventory, post-op verification, & forensic media limitation report</p>
+        </div>
+
+        <a href="/file-erasure/" class="text-xs text-cyan-400 hover:underline">
+            <i class="fa-solid fa-arrow-left"></i> Perform Another Erasure
+        </a>
+    </div>
+
+    <!-- Operation Details Card -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-6 font-mono text-xs">
+        
+        <div class="grid grid-cols-2 gap-4 border-b border-slate-800 pb-4">
+            <div><strong class="text-slate-400">Operation ID:</strong> <span class="text-amber-400 font-bold block text-sm">{{ op.operation_id }}</span></div>
+            <div><strong class="text-slate-400">Verification Status:</strong> <span class="px-2 py-0.5 bg-emerald-950 text-emerald-400 font-bold rounded border border-emerald-800">{{ op.verification_status }}</span></div>
+            <div><strong class="text-slate-400">Target Path:</strong> <span class="text-slate-200 block truncate">{{ op.target_path }}</span></div>
+            <div><strong class="text-slate-400">Algorithm / Mode:</strong> <span class="text-indigo-400">{{ op.get_erasure_method_display }} ({{ op.execution_mode }})</span></div>
+            <div><strong class="text-slate-400">Total Items:</strong> <span class="text-slate-200">{{ op.total_files }} files ({{ op.total_bytes }} bytes)</span></div>
+            <div><strong class="text-slate-400">SHA-256 Hash:</strong> <span class="text-cyan-400 font-bold">{{ op.operation_hash|slice:":24" }}...</span></div>
+        </div>
+
+        <!-- Forensic Limitation Warnings -->
+        <div class="bg-slate-950 p-4 rounded-lg border border-amber-800/60 space-y-2 text-amber-300">
+            <div class="font-bold text-amber-400 text-sm flex items-center gap-2">
+                <i class="fa-solid fa-triangle-exclamation"></i> FORENSIC FILESYSTEM & MEDIA LIMITATION NOTICE
+            </div>
+            <p class="text-slate-400">File-level deletion guarantees vary significantly across storage technologies and filesystems:</p>
+            <ul class="list-disc list-inside space-y-1 text-slate-300">
+                {% for warn in op.limitation_warnings %}
+                <li>{{ warn }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

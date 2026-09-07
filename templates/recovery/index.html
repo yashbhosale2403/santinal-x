@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Forensic Recovery | SENTINEL-X{% endblock %}
+{% block breadcrumb %}Recover{% endblock %}
+
+{% block header_status %}
+<!-- Persistent Read-Only Evidence Status Indicator -->
+<div class="px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 flex items-center space-x-2 text-xs font-semibold text-slate-700">
+    <i class="fa-solid fa-lock text-teal-600 text-xs"></i>
+    <span>READ-ONLY EVIDENCE MODE</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-4xl mx-auto">
+
+    <!-- Header Section -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Forensic File Carving & Recovery</h1>
+            <p class="text-xs text-slate-500 mt-0.5">Read-only evidence scanner, signature-based carving, and analytical confidence scoring</p>
+        </div>
+
+        <div class="px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200/80 text-xs font-semibold text-slate-700 flex items-center space-x-2">
+            <i class="fa-solid fa-shield-halved text-teal-600"></i>
+            <span>Evidence Preserved (Read-Only)</span>
+        </div>
+    </div>
+
+    <!-- Scanner Setup Form -->
+    <form method="POST" action="/recovery/" class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-card space-y-6">
+        {% csrf_token %}
+
+        <div class="space-y-4">
+            <h2 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">STEP 1: Select Forensic Evidence Image & Case</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Evidence Source Image:</label>
+                    <select name="evidence_id" class="w-full bg-slate-50 border border-slate-200 text-slate-900 p-3 rounded-xl font-medium" required>
+                        <option value="">-- Choose Evidence Image --</option>
+                        {% for e in evidence_sources %}
+                        <option value="{{ e.evidence_id }}" {% if selected_evidence and selected_evidence.evidence_id == e.evidence_id %}selected{% endif %}>
+                            {{ e.name }} ({{ e.formatted_size }}) - Case {{ e.case.case_number }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Forensic Case:</label>
+                    <select name="case_id" class="w-full bg-slate-50 border border-slate-200 text-slate-900 p-3 rounded-xl font-medium">
+                        <option value="">Auto-Detect from Evidence</option>
+                        {% for c in cases %}
+                        <option value="{{ c.case_id }}">{{ c.case_number }} - {{ c.title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Step 2: Signature Filter Selection -->
+        <div class="space-y-3 border-t border-slate-100 pt-4">
+            <h2 class="text-sm font-bold text-slate-900">STEP 2: Select File Extension Signatures to Carve</h2>
+            
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-sans">
+                <label class="flex items-center space-x-2 bg-slate-50 p-3 rounded-xl border border-slate-200/60 cursor-pointer hover:bg-slate-100 transition">
+                    <input type="checkbox" name="extensions" value="jpg" checked class="w-4 h-4 text-teal-600 rounded border-slate-300">
+                    <span class="text-slate-800 font-semibold">JPEG (.jpg)</span>
+                </label>
+                <label class="flex items-center space-x-2 bg-slate-50 p-3 rounded-xl border border-slate-200/60 cursor-pointer hover:bg-slate-100 transition">
+                    <input type="checkbox" name="extensions" value="png" checked class="w-4 h-4 text-teal-600 rounded border-slate-300">
+                    <span class="text-slate-800 font-semibold">PNG (.png)</span>
+                </label>
+                <label class="flex items-center space-x-2 bg-slate-50 p-3 rounded-xl border border-slate-200/60 cursor-pointer hover:bg-slate-100 transition">
+                    <input type="checkbox" name="extensions" value="pdf" checked class="w-4 h-4 text-teal-600 rounded border-slate-300">
+                    <span class="text-slate-800 font-semibold">PDF (.pdf)</span>
+                </label>
+                <label class="flex items-center space-x-2 bg-slate-50 p-3 rounded-xl border border-slate-200/60 cursor-pointer hover:bg-slate-100 transition">
+                    <input type="checkbox" name="extensions" value="docx" checked class="w-4 h-4 text-teal-600 rounded border-slate-300">
+                    <span class="text-slate-800 font-semibold">DOCX (.docx)</span>
+                </label>
+                <label class="flex items-center space-x-2 bg-slate-50 p-3 rounded-xl border border-slate-200/60 cursor-pointer hover:bg-slate-100 transition">
+                    <input type="checkbox" name="extensions" value="zip" checked class="w-4 h-4 text-teal-600 rounded border-slate-300">
+                    <span class="text-slate-800 font-semibold">ZIP (.zip)</span>
+                </label>
+                <label class="flex items-center space-x-2 bg-slate-50 p-3 rounded-xl border border-slate-200/60 cursor-pointer hover:bg-slate-100 transition">
+                    <input type="checkbox" name="extensions" value="txt" checked class="w-4 h-4 text-teal-600 rounded border-slate-300">
+                    <span class="text-slate-800 font-semibold">TXT (.txt)</span>
+                </label>
+                <label class="flex items-center space-x-2 bg-slate-50 p-3 rounded-xl border border-slate-200/60 cursor-pointer hover:bg-slate-100 transition">
+                    <input type="checkbox" name="extensions" value="mp4" class="w-4 h-4 text-teal-600 rounded border-slate-300">
+                    <span class="text-slate-800 font-semibold">MP4 (.mp4)</span>
+                </label>
+                <label class="flex items-center space-x-2 bg-slate-50 p-3 rounded-xl border border-slate-200/60 cursor-pointer hover:bg-slate-100 transition">
+                    <input type="checkbox" name="extensions" value="mp3" class="w-4 h-4 text-teal-600 rounded border-slate-300">
+                    <span class="text-slate-800 font-semibold">MP3 (.mp3)</span>
+                </label>
+            </div>
+        </div>
+
+        <button type="submit" class="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl shadow-xs transition uppercase tracking-wider flex items-center justify-center space-x-2">
+            <i class="fa-solid fa-play text-xs"></i>
+            <span>Start Read-Only Forensic Scan & Carving</span>
+        </button>
+    </form>
+
+    <!-- Recent Carving Scans -->
+    <div class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-card space-y-4">
+        <h2 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+            <i class="fa-solid fa-clock-rotate-left text-slate-400 text-xs"></i>
+            <span>Recent Forensic Scans</span>
+        </h2>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-sans text-slate-600">
+                <thead class="bg-slate-50 text-slate-500 border-b border-slate-200/80">
+                    <tr>
+                        <th class="py-2.5 px-3">Operation ID</th>
+                        <th class="py-2.5 px-3">Evidence Source</th>
+                        <th class="py-2.5 px-3">Candidates</th>
+                        <th class="py-2.5 px-3">Valid Count</th>
+                        <th class="py-2.5 px-3">Status</th>
+                        <th class="py-2.5 px-3">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for op in recent_recoveries %}
+                    <tr class="hover:bg-slate-50/60">
+                        <td class="py-2.5 px-3 font-mono font-semibold text-slate-900">{{ op.operation_id|slice:":12" }}...</td>
+                        <td class="py-2.5 px-3 font-medium text-slate-900">{{ op.evidence_source.name }}</td>
+                        <td class="py-2.5 px-3 font-bold text-slate-900">{{ op.candidates_found }}</td>
+                        <td class="py-2.5 px-3 font-bold text-teal-600">{{ op.valid_files_count }}</td>
+                        <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">{{ op.status }}</span></td>
+                        <td class="py-2.5 px-3">
+                            <a href="/recovery/results/{{ op.operation_id }}/" class="text-xs font-semibold text-teal-600 hover:underline">View Results</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="py-4 text-center text-slate-400">No forensic scans executed yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

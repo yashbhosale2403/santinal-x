@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Carving Results | SENTINEL-X{% endblock %}
+{% block breadcrumb %}Recover / Results{% endblock %}
+
+{% block header_status %}
+<div class="px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200 flex items-center space-x-2 text-xs font-semibold text-slate-700">
+    <i class="fa-solid fa-lock text-teal-600 text-xs"></i>
+    <span>READ-ONLY EVIDENCE MODE</span>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6" x-data="{ selectedTab: 'ALL' }">
+
+    <div class="flex items-center justify-between">
+        <div>
+            <a href="/recovery/" class="text-xs font-semibold text-teal-600 hover:underline flex items-center space-x-1 mb-1">
+                <i class="fa-solid fa-arrow-left text-[10px]"></i>
+                <span>Back to Scanner</span>
+            </a>
+            <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Carved Forensic Artifacts</h1>
+            <p class="text-xs text-slate-500 mt-0.5">Case: <strong class="text-slate-900">{{ op.case.case_number }}</strong> · Evidence: <strong class="text-slate-900">{{ op.evidence_source.name }}</strong></p>
+        </div>
+    </div>
+
+    <!-- Metrics Cards Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div class="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-card">
+            <span class="text-xs text-slate-400 font-medium block">Total Candidates</span>
+            <span class="text-3xl font-extrabold text-slate-900 mt-1 block font-mono">{{ op.candidates_found }}</span>
+        </div>
+        <div class="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-card">
+            <span class="text-xs text-teal-600 font-semibold block">High Confidence (&ge;75%)</span>
+            <span class="text-3xl font-extrabold text-teal-600 mt-1 block font-mono">{{ high_conf }}</span>
+        </div>
+        <div class="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-card">
+            <span class="text-xs text-amber-600 font-semibold block">Medium Confidence (50-74%)</span>
+            <span class="text-3xl font-extrabold text-amber-600 mt-1 block font-mono">{{ med_conf }}</span>
+        </div>
+        <div class="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-card">
+            <span class="text-xs text-slate-500 font-medium block">Low Confidence (&lt;50%)</span>
+            <span class="text-3xl font-extrabold text-slate-400 mt-1 block font-mono">{{ low_conf }}</span>
+        </div>
+    </div>
+
+    <!-- Carved Files Section with Filter Tabs -->
+    <div class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-card space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-3">
+            <h2 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                <i class="fa-solid fa-file-shield text-teal-600 text-xs"></i>
+                <span>Recovered Artifacts Inventory</span>
+            </h2>
+
+            <!-- Filter Tabs -->
+            <div class="flex items-center space-x-1 bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+                <button @click="selectedTab = 'ALL'" :class="selectedTab === 'ALL' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'" class="px-3 py-1.5 rounded-lg transition">All</button>
+                <button @click="selectedTab = 'IMAGE'" :class="selectedTab === 'IMAGE' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'" class="px-3 py-1.5 rounded-lg transition">Images</button>
+                <button @click="selectedTab = 'DOCUMENT'" :class="selectedTab === 'DOCUMENT' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'" class="px-3 py-1.5 rounded-lg transition">Documents</button>
+                <button @click="selectedTab = 'ARCHIVE'" :class="selectedTab === 'ARCHIVE' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'" class="px-3 py-1.5 rounded-lg transition">Archives</button>
+                <button @click="selectedTab = 'TEXT'" :class="selectedTab === 'TEXT' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'" class="px-3 py-1.5 rounded-lg transition">Text</button>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-sans text-slate-600">
+                <thead class="bg-slate-50 text-slate-500 border-b border-slate-200/80">
+                    <tr>
+                        <th class="py-3 px-3">Filename</th>
+                        <th class="py-3 px-3">Type</th>
+                        <th class="py-3 px-3">Size</th>
+                        <th class="py-3 px-3">Sector Offset</th>
+                        <th class="py-3 px-3">Validation Status</th>
+                        <th class="py-3 px-3">Confidence Score</th>
+                        <th class="py-3 px-3">SHA-256 Hash</th>
+                        <th class="py-3 px-3">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for rf in recovered_files %}
+                    <tr x-show="selectedTab === 'ALL' || selectedTab === '{{ rf.classification }}'" class="hover:bg-slate-50/60 transition">
+                        <td class="py-3 px-3 font-semibold text-slate-900 flex items-center space-x-2">
+                            <i class="fa-solid {% if rf.classification == 'IMAGE' %}fa-file-image text-teal-600{% elif rf.classification == 'DOCUMENT' %}fa-file-pdf text-rose-500{% else %}fa-file text-slate-400{% endif %}"></i>
+                            <span class="truncate max-w-xs">{{ rf.filename }}</span>
+                        </td>
+                        <td class="py-3 px-3 text-slate-600 font-mono text-[11px]">{{ rf.detected_type }}</td>
+                        <td class="py-3 px-3 text-slate-500 font-mono">{{ rf.size_bytes }} B</td>
+                        <td class="py-3 px-3 text-slate-400 font-mono">0x{{ rf.sector_offset|stringformat:"08X" }}</td>
+                        <td class="py-3 px-3">
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold {% if rf.validation_status == 'VALID' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% elif rf.validation_status == 'PARTIALLY_VALID' %}bg-amber-50 text-amber-700 border border-amber-200{% else %}bg-rose-50 text-rose-700 border border-rose-200{% endif %}">
+                                {{ rf.validation_status }}
+                            </span>
+                        </td>
+                        <td class="py-3 px-3 font-bold {% if rf.confidence_score >= 90 %}text-teal-700{% elif rf.confidence_score >= 75 %}text-teal-600{% elif rf.confidence_score >= 50 %}text-amber-600{% else %}text-slate-400{% endif %}">
+                            {{ rf.confidence_score }}% <span class="text-[10px] font-normal text-slate-400">({{ rf.confidence_label }})</span>
+                        </td>
+                        <td class="py-3 px-3 text-slate-400 font-mono text-[11px]">{{ rf.sha256_hash|slice:":12" }}...</td>
+                        <td class="py-3 px-3">
+                            <a href="{{ rf.output_path }}" download class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-semibold transition inline-flex items-center space-x-1">
+                                <i class="fa-solid fa-download text-[10px]"></i>
+                                <span>Extract</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="py-8 text-center text-slate-400">No carved artifacts found for this scan.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

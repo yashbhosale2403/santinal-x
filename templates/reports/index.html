@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}PDF Reports & Certificates | SENTINEL-X{% endblock %}
+{% block breadcrumb %}Reports{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <div>
+        <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Reports & Verifiable Certificates</h1>
+        <p class="text-xs text-slate-500 mt-0.5">NIST SP 800-88 Sanitization Certificates, Forensic Carving Reports, and Audit Summaries</p>
+    </div>
+
+    <!-- Reports Table -->
+    <div class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-card space-y-4">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs font-sans text-slate-600">
+                <thead class="bg-slate-50 text-slate-500 border-b border-slate-200/80">
+                    <tr>
+                        <th class="py-3 px-3">Report Title</th>
+                        <th class="py-3 px-3">Type</th>
+                        <th class="py-3 px-3">Format</th>
+                        <th class="py-3 px-3">Generated At</th>
+                        <th class="py-3 px-3">SHA-256 Hash</th>
+                        <th class="py-3 px-3">Download</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for r in reports %}
+                    <tr class="hover:bg-slate-50/60">
+                        <td class="py-3 px-3 font-semibold text-slate-900 flex items-center space-x-2">
+                            <i class="fa-solid fa-file-pdf text-rose-500"></i>
+                            <span>{{ r.title }}</span>
+                        </td>
+                        <td class="py-3 px-3 text-teal-700 font-medium">{{ r.get_report_type_display }}</td>
+                        <td class="py-3 px-3 font-mono text-slate-500">{{ r.format }}</td>
+                        <td class="py-3 px-3 text-slate-400 font-mono">{{ r.created_at|date:"Y-m-d H:i" }}</td>
+                        <td class="py-3 px-3 font-mono text-[11px] text-slate-400">{{ r.report_hash|slice:":12" }}...</td>
+                        <td class="py-3 px-3">
+                            <a href="{{ r.file_path }}" target="_blank" class="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-semibold text-xs transition inline-flex items-center space-x-1.5 shadow-xs">
+                                <i class="fa-solid fa-download text-[10px]"></i>
+                                <span>PDF Certificate</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="py-8 text-center text-slate-400">No PDF reports generated yet. Execute a sanitization or carving operation to generate one.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

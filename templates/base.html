@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-[#F8F9FA] text-slate-800">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SENTINEL-X | Secure Data Sanitization & Digital Forensics Platform{% endblock %}</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- HTMX CDN -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <!-- Alpine.js CDN -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- FontAwesome CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        purityTeal: {
+                            400: '#4FD1C5',
+                            500: '#319795',
+                            600: '#2C7A7B',
+                            700: '#234E52',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        [x-cloak] { display: none !important; }
+        .shadow-purity { box-shadow: 0px 3.5px 5.5px rgba(0, 0, 0, 0.02); }
+        .shadow-purity-card { box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.05); }
+        .shadow-purity-teal { box-shadow: 0px 4px 12px rgba(79, 209, 197, 0.4); }
+    </style>
+</head>
+<body class="h-full font-sans antialiased bg-[#F8F9FA] text-slate-800 flex flex-col" x-data="{ cmdPaletteOpen: false }" @keydown.window.cmd.k="cmdPaletteOpen = true" @keydown.window.ctrl.k="cmdPaletteOpen = true">
+
+    <!-- Purity UI Top Header -->
+    <header class="bg-transparent pt-4 px-4 sm:px-6 lg:px-8 max-w-7xl w-full mx-auto">
+        <div class="flex items-center justify-between h-14">
+            
+            {% if request.path == '/landing/' %}
+            <!-- Landing Page Header: Logo Left, Only Dashboard Button Right -->
+            <a href="/" class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-xl bg-[#4FD1C5] text-white flex items-center justify-center font-black text-base shadow-purity-teal">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div>
+                    <span class="font-extrabold text-base tracking-tight text-slate-800 uppercase">SENTINEL-X</span>
+                    <span class="text-[9px] font-bold text-slate-400 block -mt-1 uppercase tracking-wider">SECURE DATA SANITIZATION & FORENSICS</span>
+                </div>
+            </a>
+
+            <div>
+                <a href="/" class="px-5 py-2.5 bg-[#4FD1C5] hover:bg-teal-500 text-white font-extrabold text-xs rounded-xl shadow-purity-teal transition uppercase tracking-wider flex items-center space-x-2">
+                    <span>Dashboard</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                </a>
+            </div>
+            {% else %}
+            <!-- Standard App Pages Header -->
+            <div class="flex items-center space-x-3">
+                <div class="text-xs text-slate-400 font-semibold flex items-center space-x-2">
+                    <span>Pages</span>
+                    <span>/</span>
+                    <span class="text-slate-800 font-bold">{% block breadcrumb %}Dashboard{% endblock %}</span>
+                </div>
+            </div>
+
+            <!-- Middle: Search Command Palette Trigger -->
+            <button @click="cmdPaletteOpen = true" class="hidden md:flex items-center space-x-3 bg-white hover:bg-slate-50 text-slate-400 text-xs px-4 py-2.5 rounded-2xl shadow-purity border border-slate-100 transition w-72 justify-between">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs"></i>
+                    <span>Type here to search...</span>
+                </div>
+                <kbd class="bg-slate-100 text-slate-500 font-mono text-[10px] px-1.5 py-0.5 rounded">Ctrl K</kbd>
+            </button>
+
+            <!-- Right: System Status & User Profile -->
+            <div class="flex items-center space-x-4">
+                {% block header_status %}
+                <div class="px-3 py-1.5 rounded-full bg-teal-50 border border-teal-200/80 flex items-center space-x-2 text-xs font-bold text-teal-700">
+                    <span class="w-2 h-2 rounded-full bg-[#4FD1C5] animate-pulse"></span>
+                    <span>System Healthy</span>
+                </div>
+                {% endblock %}
+
+                <a href="/landing/" class="text-xs font-bold text-slate-600 hover:text-teal-600 transition hidden lg:block">About Platform</a>
+
+                {% if user.is_authenticated %}
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-teal-500 to-cyan-400 text-white font-bold text-xs flex items-center justify-center shadow-md shadow-teal-500/20">
+                        {{ user.username|slice:":1"|upper }}
+                    </div>
+                    <span class="text-xs font-bold text-slate-800 hidden sm:inline">{{ user.username }}</span>
+                    <a href="/auth/logout/" class="text-slate-400 hover:text-rose-500 text-xs ml-1 transition" title="Sign Out">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </a>
+                </div>
+                {% else %}
+                <a href="/auth/login/" class="text-xs font-bold text-teal-600 hover:underline">Sign In</a>
+                {% endif %}
+            </div>
+            {% endif %}
+
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <div class="flex-1 flex overflow-hidden max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 gap-6">
+
+        {% if request.path != '/landing/' %}
+        <!-- Purity UI Floating Sidebar Navigation -->
+        <aside class="w-64 flex flex-col shrink-0 space-y-6">
+
+            <div class="bg-white rounded-2xl shadow-purity-card border border-slate-100 p-5 space-y-6 flex-1 flex flex-col justify-between">
+                
+                <div class="space-y-6">
+                    <!-- SENTINEL-X Brand Logo Header -->
+                    <a href="/" class="flex items-center space-x-3 px-2">
+                        <div class="w-9 h-9 rounded-xl bg-[#4FD1C5] text-white flex items-center justify-center font-black text-base shadow-purity-teal">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <div>
+                            <span class="font-extrabold text-sm tracking-tight text-slate-800 uppercase">SENTINEL-X</span>
+                            <span class="text-[9px] font-extrabold text-slate-400 block -mt-0.5 uppercase tracking-wider">SANITIZATION & FORENSICS</span>
+                        </div>
+                    </a>
+
+
+                    <div class="h-px bg-slate-100 my-2"></div>
+
+                    <!-- Navigation Items -->
+                    <nav class="space-y-1 text-xs font-bold">
+                        <a href="/" class="flex items-center space-x-3 p-3 rounded-xl transition {% if request.path == '/' %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <div class="w-7 h-7 rounded-lg {% if request.path == '/' %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center">
+                                <i class="fa-solid fa-house text-xs"></i>
+                            </div>
+                            <span>Dashboard</span>
+                        </a>
+
+                        <a href="/devices/" class="flex items-center space-x-3 p-3 rounded-xl transition {% if '/devices/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <div class="w-7 h-7 rounded-lg {% if '/devices/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center">
+                                <i class="fa-solid fa-hard-drive text-xs"></i>
+                            </div>
+                            <span>Devices</span>
+                        </a>
+
+                        <a href="/sanitization/" class="flex items-center space-x-3 p-3 rounded-xl transition {% if '/sanitization/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <div class="w-7 h-7 rounded-lg {% if '/sanitization/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center">
+                                <i class="fa-solid fa-shield-halved text-xs"></i>
+                            </div>
+                            <span>Sanitize</span>
+                        </a>
+
+                        <a href="/file-erasure/" class="flex items-center space-x-3 p-3 rounded-xl transition {% if '/file-erasure/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <div class="w-7 h-7 rounded-lg {% if '/file-erasure/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center">
+                                <i class="fa-solid fa-file-excel text-xs"></i>
+                            </div>
+                            <span>File Eraser</span>
+                        </a>
+
+                        <a href="/recovery/" class="flex items-center space-x-3 p-3 rounded-xl transition {% if '/recovery/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <div class="w-7 h-7 rounded-lg {% if '/recovery/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center">
+                                <i class="fa-solid fa-magnifying-glass-location text-xs"></i>
+                            </div>
+                            <span>Recover</span>
+                        </a>
+
+                        <a href="/cases/" class="flex items-center space-x-3 p-3 rounded-xl transition {% if '/cases/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <div class="w-7 h-7 rounded-lg {% if '/cases/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center">
+                                <i class="fa-solid fa-folder text-xs"></i>
+                            </div>
+                            <span>Cases</span>
+                        </a>
+
+                        <a href="/reports/" class="flex items-center space-x-3 p-3 rounded-xl transition {% if '/reports/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <div class="w-7 h-7 rounded-lg {% if '/reports/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center">
+                                <i class="fa-solid fa-file-lines text-xs"></i>
+                            </div>
+                            <span>Reports</span>
+                        </a>
+
+                        <a href="/audit/" class="flex items-center space-x-3 p-3 rounded-xl transition {% if '/audit/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <div class="w-7 h-7 rounded-lg {% if '/audit/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center">
+                                <i class="fa-solid fa-chart-line text-xs"></i>
+                            </div>
+                            <span>Audit Chain</span>
+                        </a>
+
+                        <a href="/integrity/" class="flex items-center space-x-3 p-3 rounded-xl transition {% if '/integrity/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <div class="w-7 h-7 rounded-lg {% if '/integrity/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center">
+                                <i class="fa-solid fa-shield-check text-xs"></i>
+                            </div>
+                            <span>Integrity</span>
+                        </a>
+
+                        <a href="/ledger/" class="flex items-center space-x-3 p-3 rounded-xl transition {% if '/ledger/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <div class="w-7 h-7 rounded-lg {% if '/ledger/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center">
+                                <i class="fa-solid fa-cubes text-xs"></i>
+                            </div>
+                            <span>Ledger</span>
+                        </a>
+
+                        <div class="pt-3 pb-1 px-3">
+                            <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Knowledge</span>
+                        </div>
+
+                        <a href="/technology/" class="flex items-center space-x-3 p-3 rounded-xl transition {% if '/technology/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <div class="w-7 h-7 rounded-lg {% if '/technology/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center">
+                                <i class="fa-solid fa-brain text-xs"></i>
+                            </div>
+                            <span>Technology & Methods</span>
+                        </a>
+
+                        <a href="/documentation/" class="flex items-center space-x-3 p-3 rounded-xl transition {% if '/documentation/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <div class="w-7 h-7 rounded-lg {% if '/documentation/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center">
+                                <i class="fa-solid fa-book-bookmark text-xs"></i>
+                            </div>
+                            <span>Technical Documentation</span>
+                        </a>
+                    </nav>
+                </div>
+
+                <!-- Purity UI Bottom Floating Help Card -->
+                <div class="bg-gradient-to-tr from-teal-500 to-cyan-400 rounded-2xl p-4 text-white space-y-2 shadow-purity-teal">
+                    <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center font-bold text-sm">
+                        <i class="fa-solid fa-circle-question"></i>
+                    </div>
+                    <div class="font-extrabold text-xs">Need Help?</div>
+                    <p class="text-[10px] text-teal-50 opacity-90 leading-tight">Check NIST SP 800-88 Rev. 2 guidance and digital forensic documentation.</p>
+                    <a href="/landing/" class="block text-center py-2 bg-white text-teal-700 font-extrabold text-[10px] rounded-xl uppercase tracking-wider shadow-sm hover:bg-teal-50 transition">
+                        DOCUMENTATION
+                    </a>
+                </div>
+
+            </div>
+        </aside>
+        {% endif %}
+
+        <!-- Main Content Area -->
+
+        <main class="flex-1 overflow-y-auto min-w-0">
+            {% if messages %}
+            <div class="mb-4 space-y-2">
+                {% for message in messages %}
+                <div class="px-4 py-3 rounded-2xl border text-xs font-bold flex items-center justify-between shadow-purity-card {% if message.tags == 'error' %}bg-rose-50 border-rose-200 text-rose-700{% elif message.tags == 'success' %}bg-teal-50 border-teal-200 text-teal-700{% else %}bg-sky-50 border-sky-200 text-sky-700{% endif %}">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid {% if message.tags == 'error' %}fa-circle-exclamation{% else %}fa-circle-check{% endif %}"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <!-- Global Command Palette Modal (Ctrl + K) -->
+    <div x-show="cmdPaletteOpen" x-cloak class="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 md:p-20 bg-slate-950/30 backdrop-blur-xs flex justify-center items-start">
+        <div @click.outside="cmdPaletteOpen = false" class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-xl overflow-hidden font-sans">
+            <div class="p-4 border-b border-slate-100 flex items-center space-x-3">
+                <i class="fa-solid fa-magnifying-glass text-slate-400 text-sm"></i>
+                <input type="text" placeholder="Type a command, case ID, or device..." class="w-full text-sm font-semibold text-slate-800 outline-none bg-transparent" autofocus>
+                <kbd @click="cmdPaletteOpen = false" class="cursor-pointer bg-slate-100 text-slate-400 text-[10px] font-mono px-2 py-1 rounded">ESC</kbd>
+            </div>
+            <div class="p-2 text-xs font-bold space-y-1">
+                <div class="px-3 py-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Quick Commands</div>
+                <a href="/sanitization/" @click="cmdPaletteOpen = false" class="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-slate-50 text-slate-700 transition">
+                    <span class="flex items-center space-x-2"><i class="fa-solid fa-shield-halved text-[#4FD1C5]"></i><span>Sanitize Storage Device</span></span>
+                    <span class="text-[10px] text-slate-400">NIST SP 800-88</span>
+                </a>
+                <a href="/recovery/" @click="cmdPaletteOpen = false" class="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-slate-50 text-slate-700 transition">
+                    <span class="flex items-center space-x-2"><i class="fa-solid fa-magnifying-glass-location text-[#4FD1C5]"></i><span>Forensic File Carving</span></span>
+                    <span class="text-[10px] text-slate-400">Read-Only</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

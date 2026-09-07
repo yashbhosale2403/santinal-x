@@ -1,0 +1,461 @@
+{% extends "base.html" %}
+
+{% block title %}Sanitize Drive | SENTINEL-X{% endblock %}
+{% block breadcrumb %}Sanitize{% endblock %}
+
+{% block content %}
+<div class="space-y-8 max-w-4xl mx-auto">
+
+    <!-- Header Title -->
+    <div>
+        <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Secure Drive Sanitization</h1>
+        <p class="text-xs text-slate-500 mt-0.5">NIST SP 800-88 Rev. 2 policy enforcement & verifiable certificate generation</p>
+    </div>
+
+    <!-- Stepper Progress Header -->
+    <div class="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-card">
+        <div class="flex items-center justify-between text-xs font-semibold text-slate-500 px-2">
+            <div class="flex items-center space-x-2 text-teal-600">
+                <span class="w-6 h-6 rounded-full bg-teal-50 border border-teal-200 flex items-center justify-center font-bold text-xs">1</span>
+                <span>Select Device</span>
+            </div>
+            <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
+            <div class="flex items-center space-x-2 {% if selected_device %}text-teal-600{% endif %}">
+                <span class="w-6 h-6 rounded-full {% if selected_device %}bg-teal-50 border border-teal-200 text-teal-600{% else %}bg-slate-100 text-slate-400{% endif %} flex items-center justify-center font-bold text-xs">2</span>
+                <span>Review Method</span>
+            </div>
+            <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
+            <div class="flex items-center space-x-2">
+                <span class="w-6 h-6 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center font-bold text-xs">3</span>
+                <span>Confirm</span>
+            </div>
+            <i class="fa-solid fa-chevron-right text-[10px] text-slate-300"></i>
+            <div class="flex items-center space-x-2">
+                <span class="w-6 h-6 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center font-bold text-xs">4</span>
+                <span>Certificate</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Step 1: Device Selection -->
+    <div class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-card space-y-4">
+        <h2 class="text-sm font-bold text-slate-900">STEP 1: Select Target Storage Device</h2>
+        
+        <form method="GET" action="/sanitization/" class="flex items-center gap-3">
+            <select name="device_id" onchange="this.form.submit()" class="flex-1 bg-slate-50 border border-slate-200/80 text-slate-900 text-xs rounded-xl p-3 focus:outline-none focus:border-teal-500 font-sans font-medium">
+                <option value="">-- Choose Storage Device to Sanitize --</option>
+                {% for d in devices %}
+                <option value="{{ d.device_id }}" {% if selected_device and selected_device.device_id == d.device_id %}selected{% endif %}>
+                    {{ d.name }} [{{ d.get_media_type_display }} - {{ d.formatted_capacity }}] ({{ d.device_id }})
+                </option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="px-4 py-3 bg-slate-100 hover:bg-slate-200/80 text-xs font-semibold text-slate-700 rounded-xl transition">
+                Load Policy
+            </button>
+        </form>
+    </div>
+
+    {% if selected_device and policy %}
+    <!-- Step 2: Policy Recommendation -->
+    <div class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-card space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h2 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                <i class="fa-solid fa-shield-halved text-teal-600 text-xs"></i>
+                <span>STEP 2: NIST SP 800-88 Policy Recommendation</span>
+            </h2>
+            <span class="px-3 py-1 bg-teal-50 text-teal-700 text-xs font-semibold rounded-full border border-teal-200">
+                Assurance: {{ policy.assurance_level }}
+            </span>
+        </div>
+
+        <div class="space-y-3 text-xs leading-relaxed">
+            <div class="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200/60 font-sans">
+                <div><span class="text-slate-400 font-medium block">Target Media:</span> <strong class="text-slate-900">{{ selected_device.name }}</strong></div>
+                <div><span class="text-slate-400 font-medium block">Interface Type:</span> <strong class="text-slate-900">{{ selected_device.get_media_type_display }} ({{ selected_device.get_interface_type_display }})</strong></div>
+                <div><span class="text-slate-400 font-medium block">Recommended Technique:</span> <strong class="text-teal-700 font-bold">{{ policy.method_name }}</strong></div>
+                <div><span class="text-slate-400 font-medium block">Required Privilege:</span> <strong class="text-amber-700">{{ policy.required_privileges }}</strong></div>
+            </div>
+
+            <p class="text-slate-600"><strong>Rationale:</strong> {{ policy.explanation }}</p>
+        </div>
+    </div>
+
+    <!-- Step 3: Confirmation & Execution -->
+    <form id="sanitization-form" method="POST" action="/sanitization/" class="bg-rose-50/50 border border-rose-200/80 rounded-2xl p-6 shadow-card space-y-6">
+        {% csrf_token %}
+        <input type="hidden" name="device_id" value="{{ selected_device.device_id }}">
+
+        <div class="flex items-start space-x-3 text-rose-800">
+            <i class="fa-solid fa-triangle-exclamation text-2xl text-rose-600 mt-0.5"></i>
+            <div>
+                <h3 class="text-sm font-bold">Important: Destructive Operation Notice</h3>
+                <p class="text-xs text-rose-700/90 mt-0.5">This operation will permanently overwrite data blocks on target device {{ selected_device.name }}.</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Sanitization Technique</label>
+                <select name="method" class="w-full bg-white border border-slate-200 text-slate-900 p-3 rounded-xl font-medium focus:outline-none focus:border-teal-500">
+                    {% for val, label in method_choices %}
+                    <option value="{{ val }}" {% if policy.recommended_method == val %}selected{% endif %}>
+                        {% if policy.recommended_method == val %}★ RECOMMENDED: {% endif %}{{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block font-semibold text-slate-700 mb-1">Execution Mode</label>
+                <select name="execution_mode" class="w-full bg-white border border-slate-200 text-rose-700 font-bold p-3 rounded-xl">
+                    <option value="REAL_MODE">REAL MODE (Actual Storage Sector Overwriting)</option>
+                    <option value="SAFE_TEST_MODE">SAFE TEST MODE (Sandbox Container File)</option>
+                </select>
+                <div class="mt-2 p-2.5 bg-white/80 border border-rose-200/60 rounded-xl text-[11px] text-slate-600 space-y-1.5 leading-tight">
+                    <div class="flex items-start space-x-1.5">
+                        <span class="font-bold text-rose-700 shrink-0">REAL MODE:</span>
+                        <span>Directly accesses physical drive hardware (`\\.\PhysicalDriveX`) and overwrites actual storage sectors. <em>Destructive operation.</em></span>
+                    </div>
+                    <div class="flex items-start space-x-1.5">
+                        <span class="font-bold text-teal-700 shrink-0">SAFE TEST MODE:</span>
+                        <span>Executes sanitization routines on an isolated sandbox container image (`test_drive.img`) without modifying host drive hardware.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Double Safety Confirmation Controls -->
+        <div class="p-4 bg-white border border-slate-200 rounded-xl space-y-3 text-xs">
+            <div class="font-bold text-slate-800 uppercase tracking-wider text-[11px]">Safety Authorization Controls</div>
+
+            <div class="flex items-center space-x-2">
+                <input type="checkbox" id="ack_checkbox" name="ack_checkbox" class="w-4 h-4 text-rose-600 border-slate-300 rounded focus:ring-rose-500" required>
+                <label for="ack_checkbox" class="text-slate-700 font-medium">I understand that this operation will permanently destroy all data on {{ selected_device.name }}.</label>
+            </div>
+
+            <div>
+                <label class="block text-slate-500 mb-1">Type confirmation code to authorize: <strong class="text-rose-600 font-mono">ERASE {{ selected_device.device_id }}</strong></label>
+                <input type="text" name="confirmation_code" placeholder="ERASE {{ selected_device.device_id }}" class="w-full bg-slate-50 border border-slate-200 text-rose-600 font-mono p-3 rounded-xl outline-none focus:border-rose-400" required>
+            </div>
+        </div>
+
+        <button type="submit" id="sanitize-submit-btn" class="w-full py-3.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-xs transition uppercase tracking-wider flex items-center justify-center space-x-2">
+            <i class="fa-solid fa-shield-halved text-xs"></i>
+            <span id="btn-text">Begin Drive Sanitization Workflow</span>
+        </button>
+    </form>
+    {% endif %}
+
+</div>
+
+<!-- Real Backend Progress Modal Overlay -->
+<div id="progress-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 {% if not active_op %}hidden{% endif %}">
+    <div class="bg-white border border-slate-200/90 rounded-3xl shadow-2xl max-w-lg w-full p-6 space-y-6 relative overflow-hidden">
+        
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 border border-teal-200 flex items-center justify-center text-xl shadow-xs">
+                    <i class="fa-solid fa-hard-drive"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-slate-900 tracking-tight">Sanitizing Storage Device</h3>
+                    <p class="text-xs text-slate-500 font-medium" id="modal-device-subtitle">
+                        {% if active_op %}{{ active_op.device.name }} ({{ active_op.device.get_media_type_display }}){% else %}{{ selected_device.name }}{% endif %}
+                    </p>
+                </div>
+            </div>
+            <span id="modal-status-badge" class="px-3 py-1 bg-teal-50 text-teal-700 text-xs font-semibold rounded-full border border-teal-200/80 flex items-center space-x-1.5">
+                <span class="w-2 h-2 rounded-full bg-teal-500 animate-pulse"></span>
+                <span id="modal-badge-text">In Progress</span>
+            </span>
+        </div>
+
+        <!-- Progress Indicator Section -->
+        <div class="flex flex-col items-center justify-center py-2 space-y-4">
+            <!-- Circular Progress & Percent Display -->
+            <div class="relative w-36 h-36 flex items-center justify-center">
+                <svg class="w-36 h-36 transform -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="42" stroke-width="8" class="text-slate-100" stroke="currentColor" fill="transparent" />
+                    <circle id="progress-circle" cx="50" cy="50" r="42" stroke-width="8" class="text-teal-500 transition-all duration-300 ease-out" stroke="currentColor" fill="transparent" stroke-dasharray="263.89" stroke-dashoffset="263.89" stroke-linecap="round" />
+                </svg>
+                <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                    <span id="progress-percent-text" class="text-2xl font-extrabold text-slate-900 tracking-tight">0%</span>
+                    <span id="progress-stage-tag" class="text-[10px] uppercase font-bold text-teal-600 tracking-wider mt-0.5">INITIALIZING</span>
+                </div>
+            </div>
+
+            <!-- Horizontal Progress Bar (Accessible) -->
+            <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200/60">
+                <div id="progress-bar-fill" class="bg-gradient-to-r from-teal-500 to-emerald-500 h-2 rounded-full transition-all duration-300 ease-out w-0" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+            </div>
+
+            <!-- Fading Status Text Message -->
+            <div class="w-full text-center min-h-[32px] flex items-center justify-center px-2">
+                <p id="status-fading-message" aria-live="polite" class="text-xs font-semibold text-slate-700 transition-opacity duration-300 opacity-100">
+                    Initializing background sanitization worker...
+                </p>
+            </div>
+        </div>
+
+        <!-- Stage Checklist -->
+        <div class="bg-slate-50 border border-slate-200/70 rounded-2xl p-4 space-y-2.5 text-xs">
+            <div class="font-bold text-slate-800 uppercase tracking-wider text-[10px] mb-1">Sanitization Pipeline Stages</div>
+            
+            <div id="stage-item-init" class="flex items-center justify-between text-slate-500 font-medium">
+                <span class="flex items-center space-x-2">
+                    <i class="stage-icon fa-regular fa-circle text-[10px]"></i>
+                    <span>1. Initializing sanitization environment</span>
+                </span>
+                <span class="stage-status text-[11px]">Pending</span>
+            </div>
+
+            <div id="stage-item-detect" class="flex items-center justify-between text-slate-500 font-medium">
+                <span class="flex items-center space-x-2">
+                    <i class="stage-icon fa-regular fa-circle text-[10px]"></i>
+                    <span>2. Detecting hardware & storage controller</span>
+                </span>
+                <span class="stage-status text-[11px]">Pending</span>
+            </div>
+
+            <div id="stage-item-caps" class="flex items-center justify-between text-slate-500 font-medium">
+                <span class="flex items-center space-x-2">
+                    <i class="stage-icon fa-regular fa-circle text-[10px]"></i>
+                    <span>3. Verifying NIST SP 800-88 hardware capabilities</span>
+                </span>
+                <span class="stage-status text-[11px]">Pending</span>
+            </div>
+
+            <div id="stage-item-sanitize" class="flex items-center justify-between text-slate-500 font-medium">
+                <span class="flex items-center space-x-2">
+                    <i class="stage-icon fa-regular fa-circle text-[10px]"></i>
+                    <span>4. Overwriting storage sector data blocks</span>
+                </span>
+                <span class="stage-status text-[11px]">Pending</span>
+            </div>
+
+            <div id="stage-item-verify" class="flex items-center justify-between text-slate-500 font-medium">
+                <span class="flex items-center space-x-2">
+                    <i class="stage-icon fa-regular fa-circle text-[10px]"></i>
+                    <span>5. Final zero-sampling verification scan</span>
+                </span>
+                <span class="stage-status text-[11px]">Pending</span>
+            </div>
+
+            <div id="stage-item-cert" class="flex items-center justify-between text-slate-500 font-medium">
+                <span class="flex items-center space-x-2">
+                    <i class="stage-icon fa-regular fa-circle text-[10px]"></i>
+                    <span>6. Generating verifiable PDF certificate & ledger</span>
+                </span>
+                <span class="stage-status text-[11px]">Pending</span>
+            </div>
+        </div>
+
+        <!-- Notice Banner -->
+        <div class="bg-blue-50/80 border border-blue-200/80 rounded-xl p-3 flex items-center space-x-2.5 text-xs text-blue-800">
+            <i class="fa-solid fa-circle-info text-blue-600 text-sm shrink-0"></i>
+            <span><strong>Notice:</strong> Please do not disconnect the storage device or close this window while sanitization is in progress.</span>
+        </div>
+
+        <!-- Controls: Cancel Button -->
+        <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+            <button type="button" id="cancel-op-btn" onclick="cancelActiveOperation()" class="px-4 py-2 bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-600 font-semibold text-xs rounded-xl transition border border-slate-200 flex items-center space-x-1.5">
+                <i class="fa-solid fa-ban text-[10px]"></i>
+                <span>Cancel Sanitization</span>
+            </button>
+            <span class="text-[11px] text-slate-400 font-mono" id="modal-op-id">
+                {% if active_op %}OP: {{ active_op.operation_id }}{% endif %}
+            </span>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    let activeOperationId = "{% if active_op %}{{ active_op.operation_id }}{% endif %}";
+    let pollInterval = null;
+    let currentMessageText = "";
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const form = document.getElementById("sanitization-form");
+        if (form) {
+            form.addEventListener("submit", function(e) {
+                e.preventDefault();
+                
+                const submitBtn = document.getElementById("sanitize-submit-btn");
+                const btnText = document.getElementById("btn-text");
+                submitBtn.disabled = true;
+                btnText.textContent = "Initiating Background Worker...";
+
+                const formData = new FormData(form);
+                formData.append("ajax", "1");
+
+                fetch("/sanitization/", {
+                    method: "POST",
+                    body: formData,
+                    headers: {
+                        "X-Requested-With": "XMLHttpRequest"
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === "SUCCESS") {
+                        activeOperationId = data.operation_id;
+                        document.getElementById("modal-op-id").textContent = "OP: " + activeOperationId;
+                        showProgressModal();
+                        startPollingStatus();
+                    } else {
+                        alert(data.error_message || "Execution error.");
+                        submitBtn.disabled = false;
+                        btnText.textContent = "Begin Drive Sanitization Workflow";
+                    }
+                })
+                .catch(err => {
+                    console.error("Submit error:", err);
+                    alert("Operation failed: " + err);
+                    submitBtn.disabled = false;
+                    btnText.textContent = "Begin Drive Sanitization Workflow";
+                });
+            });
+        }
+
+        if (activeOperationId) {
+            showProgressModal();
+            startPollingStatus();
+        }
+    });
+
+    function showProgressModal() {
+        document.getElementById("progress-modal").classList.remove("hidden");
+    }
+
+    function hideProgressModal() {
+        document.getElementById("progress-modal").classList.add("hidden");
+    }
+
+    function startPollingStatus() {
+        if (!activeOperationId) return;
+        if (pollInterval) clearInterval(pollInterval);
+        
+        pollStatus();
+        pollInterval = setInterval(pollStatus, 600);
+    }
+
+    function updateFadingStatusText(newText) {
+        const msgEl = document.getElementById("status-fading-message");
+        if (!msgEl || currentMessageText === newText) return;
+
+        currentMessageText = newText;
+        msgEl.style.opacity = "0";
+        setTimeout(() => {
+            msgEl.textContent = newText;
+            msgEl.style.opacity = "1";
+        }, 250);
+    }
+
+    function updateStageItem(elementId, state) {
+        const item = document.getElementById(elementId);
+        if (!item) return;
+
+        const icon = item.querySelector(".stage-icon");
+        const statusText = item.querySelector(".stage-status");
+
+        if (state === "COMPLETED") {
+            item.className = "flex items-center justify-between text-emerald-700 font-semibold";
+            icon.className = "stage-icon fa-solid fa-circle-check text-emerald-500 text-xs";
+            statusText.textContent = "Completed";
+        } else if (state === "ACTIVE") {
+            item.className = "flex items-center justify-between text-teal-700 font-bold";
+            icon.className = "stage-icon fa-solid fa-spinner fa-spin text-teal-500 text-xs";
+            statusText.textContent = "In progress";
+        } else {
+            item.className = "flex items-center justify-between text-slate-400 font-normal";
+            icon.className = "stage-icon fa-regular fa-circle text-[10px]";
+            statusText.textContent = "Pending";
+        }
+    }
+
+    function pollStatus() {
+        if (!activeOperationId) return;
+
+        fetch("/sanitization/api/status/" + activeOperationId + "/")
+            .then(res => res.json())
+            .then(data => {
+                const pct = Math.min(Math.max(data.progress, 0), 100);
+                
+                // Update percent & progress bar
+                document.getElementById("progress-percent-text").textContent = pct + "%";
+                const fillBar = document.getElementById("progress-bar-fill");
+                fillBar.style.width = pct + "%";
+                fillBar.setAttribute("aria-valuenow", pct);
+
+                // Update circular SVG dashoffset (circumference = 263.89)
+                const circle = document.getElementById("progress-circle");
+                const offset = 263.89 - (263.89 * pct / 100);
+                circle.style.strokeDashoffset = offset;
+
+                document.getElementById("progress-stage-tag").textContent = data.current_stage || data.status;
+
+                // Fading status text
+                if (data.status_message) {
+                    updateFadingStatusText(data.status_message);
+                }
+
+                // Update checklist items
+                if (pct >= 5) updateStageItem("stage-item-init", pct >= 15 ? "COMPLETED" : "ACTIVE");
+                if (pct >= 15) updateStageItem("stage-item-detect", pct >= 25 ? "COMPLETED" : "ACTIVE");
+                if (pct >= 25) updateStageItem("stage-item-caps", pct >= 35 ? "COMPLETED" : "ACTIVE");
+                if (pct >= 35) updateStageItem("stage-item-sanitize", pct >= 85 ? "COMPLETED" : "ACTIVE");
+                if (pct >= 85) updateStageItem("stage-item-verify", pct >= 95 ? "COMPLETED" : "ACTIVE");
+                if (pct >= 95) updateStageItem("stage-item-cert", pct >= 100 ? "COMPLETED" : "ACTIVE");
+
+                // Completion Flow
+                if (data.is_completed) {
+                    clearInterval(pollInterval);
+                    document.getElementById("modal-badge-text").textContent = "Completed";
+                    updateFadingStatusText("✓ Sanitization completed & verified! Redirecting to report certificate...");
+                    setTimeout(() => {
+                        window.location.href = "/sanitization/result/" + activeOperationId + "/";
+                    }, 1000);
+                }
+
+                // Failure Flow
+                if (data.is_failed) {
+                    clearInterval(pollInterval);
+                    const badge = document.getElementById("modal-status-badge");
+                    badge.className = "px-3 py-1 bg-rose-50 text-rose-700 text-xs font-semibold rounded-full border border-rose-200 flex items-center space-x-1.5";
+                    document.getElementById("modal-badge-text").textContent = "Failed";
+                    updateFadingStatusText("❌ Sanitization Error: " + (data.error_message || "Operation failed"));
+                }
+
+                // Cancellation Flow
+                if (data.is_cancelled) {
+                    clearInterval(pollInterval);
+                    const badge = document.getElementById("modal-status-badge");
+                    badge.className = "px-3 py-1 bg-amber-50 text-amber-700 text-xs font-semibold rounded-full border border-amber-200 flex items-center space-x-1.5";
+                    document.getElementById("modal-badge-text").textContent = "Cancelled";
+                    updateFadingStatusText("⚠️ Operation cancelled by investigator.");
+                }
+            })
+            .catch(err => console.error("Poll error:", err));
+    }
+
+    function cancelActiveOperation() {
+        if (!activeOperationId) return;
+        if (!confirm("Are you sure you want to cancel the sanitization operation?")) return;
+
+        fetch("/sanitization/api/cancel/" + activeOperationId + "/", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}"
+            }
+        })
+        .then(res => res.json())
+        .then(data => {
+            updateFadingStatusText("Cancellation requested...");
+        })
+        .catch(err => alert("Cancel failed: " + err));
+    }
+</script>
+{% endblock %}
