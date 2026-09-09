@@ -79,6 +79,13 @@ SENTINEL-X is an integrated cybersecurity and digital-forensics platform designe
 ./run.sh
 ```
 
+On Windows PowerShell, run the PowerShell launcher from the repository folder:
+
+```powershell
+cd .\data-cleaning
+.\run.ps1
+```
+
 The launcher creates or reuses a local virtual environment, installs dependencies, runs migrations, creates the demo environment, seeds the admin user (`admin` / `admin123`), and launches the dashboard at [http://127.0.0.1:8000](http://127.0.0.1:8000). Optional server arguments are forwarded, for example `./run.sh --port 8080`.
 
 ### 3. Run Automated Test Suite
