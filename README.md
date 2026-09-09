@@ -74,20 +74,14 @@ SENTINEL-X is an integrated cybersecurity and digital-forensics platform designe
 - Python 3.12+
 - Django 6.0+
 
-### 2. Installation Commands
+### 2. One-command Startup
 ```bash
-
-# Install requirements
-pip install django djangorestframework reportlab psutil pillow pytest
+./run.sh
 ```
 
-### 3. Run the Web Dashboard
-```bash
-python manage.py runserver 8000
-```
-Open your browser at [http://127.0.0.1:8000](http://127.0.0.1:8000).
+The launcher creates or reuses a local virtual environment, installs dependencies, runs migrations, creates the demo environment, seeds the admin user (`admin` / `admin123`), and launches the dashboard at [http://127.0.0.1:8000](http://127.0.0.1:8000). Optional server arguments are forwarded, for example `./run.sh --port 8080`.
 
-### 4. Run Automated Test Suite
+### 3. Run Automated Test Suite
 ```bash
 python manage.py test tests
 ```
