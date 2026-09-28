@@ -18,11 +18,16 @@ SENTINEL-X is an integrated cybersecurity and digital-forensics platform designe
    - Pre-operation inventory inspection & metadata extraction.
    - Modern filesystem limitation breakdown (journaling, TRIM, SSD wear leveling, volume shadow copies).
 
-3. **Advanced Forensic File Carving Engine**
-   - Read-only bit-stream scanner for forensic images (`.img`, `.raw`).
-   - Modular Signature Database for JPEG, PNG, PDF, GIF, BMP, ZIP, DOCX, MP3, MP4, WAV, and TXT.
-   - Format-specific structure validation & Python PIL image load checks.
-   - 0–100 Analytical Confidence Scoring (Very High, High, Medium, Low, Very Low).
+3. **Multi-Method Forensic Recovery Engine**
+   - **Read-Only Streaming Architecture**: Chunked evidence reader (`StreamingImageReader`) preventing RAM exhaustion on large forensic images while maintaining 100% read-only evidence isolation (`source_hash_before == source_hash_after`).
+   - **Beginner-Friendly Recovery Modes**:
+     - **Quick Recovery**: Fast metadata-based recovery (NTFS MFT records & directory entries recovering original filenames/paths).
+     - **Deep Recovery**: Metadata + unallocated space scanning + raw signature carving + structure validation.
+     - **Maximum Recovery**: All available safe recovery vectors including fragment reconstruction and artifact fusion.
+   - **Partition & Filesystem Awareness**: Read-only MBR & GPT partition detection and NTFS, FAT32, exFAT, and ext2/3/4 filesystem inspection.
+   - **Structure Validation & 0–100 Confidence Scoring**: Format-specific structure parsers (JPEG, PNG, PDF, DOCX, ZIP, MP4, WAV, MP3, GIF, BMP, TXT) with analytical confidence rating.
+   - **Artifact Fusion & Deduplication**: Merges duplicate candidates across metadata and carving scans while preserving original filenames.
+   - **Cryptographic Evidence Chain**: Automatic PDF report generation, Audit event logging, and direct anchor to the **Immutable Ledger**.
 
 4. **Cryptographic Tamper-Evident Audit Chain**
    - Hash-chained event log: `event_hash = SHA256(event_data + previous_event_hash)`.

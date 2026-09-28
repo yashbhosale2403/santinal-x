@@ -160,26 +160,35 @@ PDF Report Certificate -> SHA-256 Hash -> Immutable Ledger -> Later Verification
 
 ---
 
-## 11. Advanced Digital Forensics Read-Only File Carving Pipeline
+## 11. Multi-Method Forensic Recovery Engine & Read-Only Pipeline
 
-The SENTINEL-X recovery engine uses signature-based structure carving to reconstruct deleted artifacts from raw binary disk images.
+The SENTINEL-X recovery engine uses a multi-method forensic pipeline complying with **NIST SP 800-86** (Guide to Integrating Forensic Techniques into Incident Response) to reconstruct deleted artifacts from raw binary disk images (`.img`, `.raw`) without modifying source media (`source_hash_before == source_hash_after`).
 
-### Pipeline Stages:
-`
-FORENSIC IMAGE -> SHA-256 HASH -> READ-ONLY SCANNING -> SIGNATURE DETECTION -> STRUCTURE VALIDATION -> FRAGMENT ANALYSIS -> FILE RECONSTRUCTION -> FILE VALIDATION -> CLASSIFICATION -> CONFIDENCE SCORE -> RECOVERED ARTIFACT -> FORENSIC REPORT
-`
+### Multi-Method Recovery Pipeline:
+```
+EVIDENCE IMAGE -> READ-ONLY STREAMING -> PARTITION DETECTION -> FILESYSTEM IDENTIFICATION -> FILESYSTEM METADATA RECOVERY -> UNALLOCATED CARVING -> STRUCTURE VALIDATION -> FRAGMENT ANALYSIS -> ARTIFACT FUSION & DEDUP -> CONFIDENCE SCORING -> SHA-256 HASH -> AUDIT EVENT -> FORENSIC PDF REPORT -> IMMUTABLE LEDGER RECORD
+```
 
-### Supported File Formats:
-- **JPEG:** Header FF D8 FF E0/E1 | Trailer FF D9 | Decodability check via PIL
-- **PNG:** Header 89 50 4E 47 0D 0A 1A 0A | Chunk CRC32 validation
-- **PDF:** Header %PDF-1. | Trailer %%EOF | Structure xref table check
-- **DOCX / ZIP:** Header 50 4B 03 04 | Central directory parsing
-- **MP3 / MP4 / WAV:** Audio/Video container atom parsing
-- **TXT:** UTF-8 / ASCII entropy analysis
+### Recovery Modes & User Control:
+1. **Quick Recovery (Filesystem Metadata):** Rapid extraction of deleted files using NTFS MFT records & directory entries to recover original filenames, parent folder paths, and exact cluster run offsets.
+2. **Deep Recovery (Metadata + Carving + Validation):** Combines metadata recovery with streaming unallocated space signature carving and structure decoding checks.
+3. **Maximum Recovery (Metadata + Carving + Fragments + Fusion):** Employs all available safe recovery vectors, including non-contiguous fragment reconstruction evaluation and deduplication.
 
-### Confidence Scoring Model:
-Carved artifacts are assigned an analytical confidence score (0-100%) based on signature completeness and structural decode validation.
-> *Note: Confidence scoring is an analytical estimate of structural integrity and is not legal proof of original file authenticity.*
+### Architectural Components (`workers/recovery_worker/`):
+- **`StreamingImageReader`**: Chunked 32MB/16MB read-only streaming reader with overlap window preventing RAM exhaustion on multi-GB/TB evidence files.
+- **`PartitionDetector`**: Read-only MBR & GPT partition table parsing identifying partition boundaries, LBA offsets, and filesystem hints.
+- **`FilesystemDetector`**: Volume boot record and superblock inspector identifying NTFS, FAT32, exFAT, and ext2/3/4 filesystems.
+- **`FilesystemMetadataRecovery`**: NTFS MFT `$FILE_NAME` and `$DATA` attribute parser recovering original filenames and path structures.
+- **`ForensicCarver` & `SignatureDatabase`**: Raw signature header/footer scanner and format validators (JPEG, PNG, PDF, DOCX, ZIP, MP4, WAV, MP3, GIF, BMP, TXT).
+- **`FragmentEngine`**: Evaluates non-contiguous extent relationships, missing footers, and structural continuity.
+- **`ArtifactFusion`**: Merges duplicate candidates recovered across multiple vectors while preserving original metadata.
+- **`ConfidenceCalculator`**: Assigns 0–100 analytical confidence ratings based on structure validity, decoder verification, and metadata correlation.
+
+### Forensic Limitations & Integrity Disclaimers:
+- Data recovery depends strictly on surviving physical media sectors and unallocated space integrity.
+- Overwritten storage blocks cannot be recovered through software recovery techniques.
+- SSD controller TRIM commands and wear leveling may result in zero-filled deleted sectors.
+- Confidence scoring represents structural integrity analysis and does not constitute legal proof of original file ownership.
 
 ---
 

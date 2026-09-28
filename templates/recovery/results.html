@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Carving Results | SENTINEL-X{% endblock %}
+{% block title %}Recovery Results | SENTINEL-X{% endblock %}
 {% block breadcrumb %}Recover / Results{% endblock %}
 
 {% block header_status %}
@@ -11,7 +11,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="space-y-6" x-data="{ selectedTab: 'ALL' }">
+<div class="space-y-6" x-data="{ selectedTab: 'ALL', modalOpen: false, modalFile: {} }">
 
     <div class="flex items-center justify-between">
         <div>
@@ -19,9 +19,16 @@
                 <i class="fa-solid fa-arrow-left text-[10px]"></i>
                 <span>Back to Scanner</span>
             </a>
-            <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Carved Forensic Artifacts</h1>
-            <p class="text-xs text-slate-500 mt-0.5">Case: <strong class="text-slate-900">{{ op.case.case_number }}</strong> · Evidence: <strong class="text-slate-900">{{ op.evidence_source.name }}</strong></p>
+            <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Recovered Forensic Artifacts</h1>
+            <p class="text-xs text-slate-500 mt-0.5">Case: <strong class="text-slate-900">{{ op.case.case_number }}</strong> · Evidence: <strong class="text-slate-900">{{ op.evidence_source.name }}</strong> · Mode: <strong class="text-teal-700 uppercase font-mono text-[11px]">{{ op.recovery_mode }}</strong></p>
         </div>
+
+        {% if report %}
+        <a href="{{ report.file_path }}" download class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-xs transition inline-flex items-center space-x-2">
+            <i class="fa-solid fa-file-pdf text-xs"></i>
+            <span>Download Forensic Report PDF</span>
+        </a>
+        {% endif %}
     </div>
 
     <!-- Metrics Cards Grid -->
@@ -68,10 +75,11 @@
                     <tr>
                         <th class="py-3 px-3">Filename</th>
                         <th class="py-3 px-3">Type</th>
+                        <th class="py-3 px-3">Recovery Source</th>
                         <th class="py-3 px-3">Size</th>
-                        <th class="py-3 px-3">Sector Offset</th>
+                        <th class="py-3 px-3">Offset</th>
                         <th class="py-3 px-3">Validation Status</th>
-                        <th class="py-3 px-3">Confidence Score</th>
+                        <th class="py-3 px-3">Confidence</th>
                         <th class="py-3 px-3">SHA-256 Hash</th>
                         <th class="py-3 px-3">Action</th>
                     </tr>
@@ -81,11 +89,16 @@
                     <tr x-show="selectedTab === 'ALL' || selectedTab === '{{ rf.classification }}'" class="hover:bg-slate-50/60 transition">
                         <td class="py-3 px-3 font-semibold text-slate-900 flex items-center space-x-2">
                             <i class="fa-solid {% if rf.classification == 'IMAGE' %}fa-file-image text-teal-600{% elif rf.classification == 'DOCUMENT' %}fa-file-pdf text-rose-500{% else %}fa-file text-slate-400{% endif %}"></i>
-                            <span class="truncate max-w-xs">{{ rf.filename }}</span>
+                            <span class="truncate max-w-xs" title="{{ rf.display_name }}">{{ rf.display_name }}</span>
                         </td>
                         <td class="py-3 px-3 text-slate-600 font-mono text-[11px]">{{ rf.detected_type }}</td>
+                        <td class="py-3 px-3">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                                {{ rf.recovery_source }}
+                            </span>
+                        </td>
                         <td class="py-3 px-3 text-slate-500 font-mono">{{ rf.size_bytes }} B</td>
-                        <td class="py-3 px-3 text-slate-400 font-mono">0x{{ rf.sector_offset|stringformat:"08X" }}</td>
+                        <td class="py-3 px-3 text-slate-400 font-mono text-[11px]">0x{{ rf.byte_offset|stringformat:"08X" }}</td>
                         <td class="py-3 px-3">
                             <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold {% if rf.validation_status == 'VALID' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% elif rf.validation_status == 'PARTIALLY_VALID' %}bg-amber-50 text-amber-700 border border-amber-200{% else %}bg-rose-50 text-rose-700 border border-rose-200{% endif %}">
                                 {{ rf.validation_status }}
@@ -96,15 +109,33 @@
                         </td>
                         <td class="py-3 px-3 text-slate-400 font-mono text-[11px]">{{ rf.sha256_hash|slice:":12" }}...</td>
                         <td class="py-3 px-3">
-                            <a href="{{ rf.output_path }}" download class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-semibold transition inline-flex items-center space-x-1">
-                                <i class="fa-solid fa-download text-[10px]"></i>
-                                <span>Extract</span>
-                            </a>
+                            <div class="flex items-center space-x-2">
+                                <a href="{{ rf.output_path }}" download class="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg text-xs font-semibold transition inline-flex items-center space-x-1">
+                                    <i class="fa-solid fa-download text-[10px]"></i>
+                                    <span>Extract</span>
+                                </a>
+                                <button @click="modalOpen = true; modalFile = {
+                                    filename: '{{ rf.display_name|escapejs }}',
+                                    original_path: '{{ rf.original_path|escapejs }}',
+                                    type: '{{ rf.detected_type|escapejs }}',
+                                    source: '{{ rf.recovery_source|escapejs }}',
+                                    size: '{{ rf.size_bytes }} B',
+                                    offset: '0x{{ rf.byte_offset|stringformat:"08X" }}',
+                                    sector: '{{ rf.sector_number }}',
+                                    confidence: '{{ rf.confidence_score }}% ({{ rf.confidence_label }})',
+                                    validation: '{{ rf.validation_status|escapejs }}',
+                                    details: '{{ rf.validation_details|escapejs }}',
+                                    hash: '{{ rf.sha256_hash|escapejs }}'
+                                }" class="px-2.5 py-1 bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200/80 rounded-lg text-xs font-semibold transition inline-flex items-center space-x-1">
+                                    <i class="fa-solid fa-info-circle text-[10px]"></i>
+                                    <span>Details</span>
+                                </button>
+                            </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="py-8 text-center text-slate-400">No carved artifacts found for this scan.</td>
+                        <td colspan="9" class="py-8 text-center text-slate-400">No carved artifacts found for this scan.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -112,5 +143,108 @@
         </div>
     </div>
 
+    <!-- Details Modal -->
+    <div x-show="modalOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+        <div @click.away="modalOpen = false" class="bg-white border border-slate-200 rounded-2xl p-6 shadow-2xl max-w-lg w-full space-y-4 text-xs">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                    <i class="fa-solid fa-file-shield text-teal-600"></i>
+                    <span>Artifact Technical Details</span>
+                </h3>
+                <button @click="modalOpen = false" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <div class="space-y-2.5 font-sans">
+                <div class="grid grid-cols-3 gap-2">
+                    <span class="text-slate-400 font-semibold">Filename:</span>
+                    <span class="col-span-2 font-bold text-slate-900 truncate" x-text="modalFile.filename"></span>
+                </div>
+                <div class="grid grid-cols-3 gap-2" x-show="modalFile.original_path">
+                    <span class="text-slate-400 font-semibold">Original Path:</span>
+                    <span class="col-span-2 font-mono text-slate-700 truncate" x-text="modalFile.original_path"></span>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <span class="text-slate-400 font-semibold">Recovery Source:</span>
+                    <span class="col-span-2 font-semibold text-teal-700" x-text="modalFile.source"></span>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <span class="text-slate-400 font-semibold">Byte Offset / Sector:</span>
+                    <span class="col-span-2 font-mono text-slate-800" x-text="`${modalFile.offset} (Sector ${modalFile.sector})`"></span>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <span class="text-slate-400 font-semibold">Validation Status:</span>
+                    <span class="col-span-2 font-bold text-emerald-600" x-text="modalFile.validation"></span>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <span class="text-slate-400 font-semibold">Confidence Score:</span>
+                    <span class="col-span-2 font-bold text-teal-700" x-text="modalFile.confidence"></span>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <span class="text-slate-400 font-semibold">Structure Details:</span>
+                    <span class="col-span-2 text-slate-600 leading-relaxed" x-text="modalFile.details"></span>
+                </div>
+                <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100">
+                    <span class="text-slate-400 font-semibold">SHA-256 Hash:</span>
+                    <span class="col-span-2 font-mono text-[10px] text-slate-800 break-all" x-text="modalFile.hash"></span>
+                </div>
+            </div>
+
+            <div class="pt-2 flex justify-end">
+                <button @click="modalOpen = false" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl font-semibold">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cryptographic Ledger & Chain of Custody Integrity Record -->
+    {% if ledger_entry %}
+    <div class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-card space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h2 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                <i class="fa-solid fa-link text-teal-600 text-xs"></i>
+                <span>Cryptographic Audit & Immutable Ledger Integrity Record</span>
+            </h2>
+            <span class="px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-extrabold flex items-center space-x-1.5">
+                <i class="fa-solid fa-shield-check text-xs"></i>
+                <span>{{ ledger_entry.verification_status }}</span>
+            </span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-sans">
+            <div class="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200/60">
+                <div class="flex justify-between">
+                    <span class="text-slate-500 font-semibold">Evidence SHA-256:</span>
+                    <span class="font-mono text-slate-900 font-bold truncate max-w-xs" title="{{ op.operation_hash }}">{{ op.operation_hash|slice:":20" }}...</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500 font-semibold">Forensic Report Hash:</span>
+                    <span class="font-mono text-slate-900 font-bold truncate max-w-xs" title="{{ ledger_entry.report_hash }}">{{ ledger_entry.report_hash|slice:":20" }}...</span>
+                </div>
+            </div>
+
+            <div class="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200/60">
+                <div class="flex justify-between">
+                    <span class="text-slate-500 font-semibold">Ledger Transaction ID:</span>
+                    <span class="font-mono text-teal-700 font-bold truncate max-w-xs" title="{{ ledger_entry.transaction_id }}">{{ ledger_entry.transaction_id|slice:":20" }}...</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500 font-semibold">Ledger Adapter Type:</span>
+                    <span class="font-semibold text-slate-800">{{ ledger_entry.get_ledger_type_display }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="pt-1 flex items-center justify-between text-xs">
+            <span class="text-slate-400">All evidence access and recovery artifacts are cryptographically chained and anchored to SENTINEL-X Immutable Ledger.</span>
+            <a href="/ledger/" class="text-xs font-bold text-teal-600 hover:underline flex items-center space-x-1">
+                <span>View Full Immutable Ledger</span>
+                <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
 </div>
 {% endblock %}
+

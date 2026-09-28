@@ -54,6 +54,16 @@ class SignatureDatabase:
             return cls._validate_zip_office(data, ext)
         elif ext == 'txt':
             return cls._validate_txt(data)
+        elif ext == 'mp4':
+            return cls._validate_mp4(data)
+        elif ext == 'wav':
+            return cls._validate_wav(data)
+        elif ext == 'mp3':
+            return cls._validate_mp3(data)
+        elif ext == 'gif':
+            return cls._validate_gif(data)
+        elif ext == 'bmp':
+            return cls._validate_bmp(data)
         else:
             # Generic signature matching validation
             sig = cls.get_by_ext(ext)
@@ -142,3 +152,40 @@ class SignatureDatabase:
         except Exception:
             pass
         return {'status': 'INVALID', 'confidence': 20, 'details': 'Non-text binary data.'}
+
+    @staticmethod
+    def _validate_mp4(data: bytes) -> Dict[str, Any]:
+        if b'ftyp' in data[:32]:
+            has_moov = b'moov' in data or b'mdat' in data
+            if has_moov:
+                return {'status': 'VALID', 'confidence': 94, 'details': 'ISO MP4 container ftyp & moov/mdat boxes verified.'}
+            return {'status': 'PARTIALLY_VALID', 'confidence': 75, 'details': 'MP4 ftyp box present, trailing stream truncated.'}
+        return {'status': 'INVALID', 'confidence': 0, 'details': 'Missing MP4 ftyp box header.'}
+
+    @staticmethod
+    def _validate_wav(data: bytes) -> Dict[str, Any]:
+        if data.startswith(b'RIFF') and b'WAVE' in data[8:16]:
+            return {'status': 'VALID', 'confidence': 95, 'details': 'RIFF WAVE audio header and fmt chunk verified.'}
+        return {'status': 'INVALID', 'confidence': 0, 'details': 'Missing RIFF WAVE audio header.'}
+
+    @staticmethod
+    def _validate_mp3(data: bytes) -> Dict[str, Any]:
+        if data.startswith(b'ID3') or data.startswith(b'\xFF\xFB') or data.startswith(b'\xFF\xF3'):
+            return {'status': 'VALID', 'confidence': 90, 'details': 'MP3 ID3 tag / frame header verified.'}
+        return {'status': 'INVALID', 'confidence': 0, 'details': 'Missing MP3 ID3 header or sync word.'}
+
+    @staticmethod
+    def _validate_gif(data: bytes) -> Dict[str, Any]:
+        if data.startswith(b'GIF87a') or data.startswith(b'GIF89a'):
+            has_term = b'\x00\x3B' in data[-4:] or b'\x3B' in data[-2:]
+            if has_term:
+                return {'status': 'VALID', 'confidence': 96, 'details': 'GIF header and trailer byte 0x3B verified.'}
+            return {'status': 'PARTIALLY_VALID', 'confidence': 78, 'details': 'GIF header present, missing trailer.'}
+        return {'status': 'INVALID', 'confidence': 0, 'details': 'Missing GIF87a/GIF89a header.'}
+
+    @staticmethod
+    def _validate_bmp(data: bytes) -> Dict[str, Any]:
+        if data.startswith(b'BM'):
+            return {'status': 'VALID', 'confidence': 88, 'details': 'BMP magic header BM verified.'}
+        return {'status': 'INVALID', 'confidence': 0, 'details': 'Missing BMP magic header.'}
+

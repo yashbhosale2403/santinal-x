@@ -1,13 +1,13 @@
 import os
-import io
 import hashlib
 from typing import List, Dict, Any, Tuple
 from workers.recovery_worker.signatures import SignatureDatabase
+from workers.recovery_worker.image_reader import StreamingImageReader
 
 class ForensicCarver:
     """
     Read-Only Forensic File Carving Engine.
-    Scans forensic disk images (.img / .raw) in read-only mode, extracts file candidates,
+    Scans forensic disk images (.img / .raw) in read-only chunked stream, extracts file candidates,
     performs structure validation, and assigns confidence scores (0-100).
     """
 
@@ -18,7 +18,7 @@ class ForensicCarver:
         output_dir: str
     ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
         """
-        Reads evidence image in READ-ONLY ('rb') mode, carves signature candidates,
+        Reads evidence image in READ-ONLY ('rb') streaming mode, carves signature candidates,
         validates structure, saves recovered files to output_dir, and hashes results.
         """
         if not os.path.exists(image_path):
@@ -27,83 +27,98 @@ class ForensicCarver:
         os.makedirs(output_dir, exist_ok=True)
         
         # Calculate pre-scan SHA-256 of original evidence image
-        evidence_hash = ForensicCarver._calculate_sha256(image_path)
+        evidence_hash = StreamingImageReader.calculate_sha256(image_path)
 
         recovered_artifacts = []
         scanned_bytes = os.path.getsize(image_path)
         
         target_exts = [e.lower().lstrip('.') for e in target_extensions] if target_extensions else ['jpg', 'png', 'pdf', 'docx', 'txt', 'zip']
 
-        with open(image_path, 'rb') as f:
-            content = f.read()
+        # Scan chunks using StreamingImageReader to avoid loading multi-GB/TB files into RAM
+        seen_offsets = set()
 
-        # Iterate over signatures
         for ext in target_exts:
             sig = SignatureDatabase.get_by_ext(ext)
             if not sig:
                 continue
 
-            # Signature header scanning
             header = sig.header
             if not header and ext == 'txt':
-                # Special handling for text carving
+                # Controlled text region scanning
                 continue
 
-            offset = 0
             match_count = 0
-            while True:
-                idx = content.find(header, offset)
-                if idx == -1:
-                    break
-                
-                match_count += 1
-                offset = idx + len(header)
 
-                # Determine file end or window size
-                end_idx = -1
-                if sig.footer:
-                    end_idx = content.find(sig.footer, offset)
-                    if end_idx != -1:
-                        end_idx += len(sig.footer)
+            for chunk_offset, chunk_bytes, total_size in StreamingImageReader.stream_chunks(image_path, chunk_size=16*1024*1024, overlap=1*1024*1024):
+                offset_in_chunk = 0
 
-                if end_idx == -1 or (end_idx - idx) > sig.max_size or (end_idx - idx) < 100:
-                    # Estimate file size or capture default chunk
-                    candidate_data = content[idx : idx + min(5 * 1024 * 1024, len(content) - idx)]
-                else:
-                    candidate_data = content[idx : end_idx]
+                while True:
+                    idx_in_chunk = chunk_bytes.find(header, offset_in_chunk)
+                    if idx_in_chunk == -1:
+                        break
 
-                # Perform Structure Validation
-                val_res = SignatureDatabase.validate_file_structure(candidate_data, ext)
-                
-                # Filter out low-quality false positives
-                if val_res['confidence'] < 20:
-                    continue
+                    global_offset = chunk_offset + idx_in_chunk
+                    offset_in_chunk = idx_in_chunk + len(header)
 
-                filename = f"recovered_off_{idx:08X}.{ext}"
-                out_path = os.path.join(output_dir, filename)
+                    if global_offset in seen_offsets:
+                        continue
+                    seen_offsets.add(global_offset)
+                    match_count += 1
 
-                # Write carved artifact
-                with open(out_path, 'wb') as out_f:
-                    out_f.write(candidate_data)
+                    # Determine file end or capture window
+                    end_idx_in_chunk = -1
+                    if sig.footer:
+                        end_idx_in_chunk = chunk_bytes.find(sig.footer, offset_in_chunk)
+                        if end_idx_in_chunk != -1:
+                            end_idx_in_chunk += len(sig.footer)
 
-                carved_hash = hashlib.sha256(candidate_data).hexdigest()
+                    if end_idx_in_chunk != -1 and (end_idx_in_chunk - idx_in_chunk) <= sig.max_size and (end_idx_in_chunk - idx_in_chunk) >= 100:
+                        candidate_data = chunk_bytes[idx_in_chunk : end_idx_in_chunk]
+                    else:
+                        candidate_size = min(sig.max_size, total_size - global_offset, 5 * 1024 * 1024)
+                        candidate_data = StreamingImageReader.read_exact_bytes(image_path, global_offset, candidate_size)
 
-                recovered_artifacts.append({
-                    'filename': filename,
-                    'detected_type': ext.upper(),
-                    'mime_type': sig.mime,
-                    'size_bytes': len(candidate_data),
-                    'sector_offset': idx,
-                    'confidence_score': val_res['confidence'],
-                    'validation_status': val_res['status'],
-                    'carving_method': 'HEADER_FOOTER_MATCH' if sig.footer and end_idx != -1 else 'STRUCTURE_VALIDATED_HEADER',
-                    'sha256_hash': carved_hash,
-                    'output_path': out_path,
-                    'classification': sig.classification,
-                    'validation_details': val_res['details']
-                })
+                    val_res = SignatureDatabase.validate_file_structure(candidate_data, ext)
 
-                if match_count >= 50: # Limit per extension for safety
+                    if val_res['confidence'] < 20:
+                        continue
+
+                    filename = f"recovered_off_{global_offset:08X}.{ext}"
+                    out_path = os.path.join(output_dir, filename)
+
+                    with open(out_path, 'wb') as out_f:
+                        out_f.write(candidate_data)
+
+                    carved_hash = hashlib.sha256(candidate_data).hexdigest()
+
+                    recovered_artifacts.append({
+                        'filename': filename,
+                        'original_filename': '',
+                        'original_path': '',
+                        'detected_type': ext.upper(),
+                        'mime_type': sig.mime,
+                        'size_bytes': len(candidate_data),
+                        'byte_offset': global_offset,
+                        'sector_number': global_offset // 512,
+                        'sector_offset': global_offset,
+                        'confidence_score': val_res['confidence'],
+                        'validation_status': val_res['status'],
+                        'carving_method': 'HEADER_FOOTER_MATCH' if sig.footer and end_idx_in_chunk != -1 else 'STRUCTURE_VALIDATED_HEADER',
+                        'recovery_source': 'Unallocated Signature Carving',
+                        'deleted_status': True,
+                        'sha256_hash': carved_hash,
+                        'output_path': out_path,
+                        'classification': sig.classification,
+                        'validation_details': val_res['details'],
+                        'fragment_count': 1,
+                        'fragments_missing': 0,
+                        'reconstruction_status': 'SUCCESS' if val_res['status'] == 'VALID' else 'PARTIAL'
+                    })
+
+                    if match_count >= 50:
+                        break
+
+                if match_count >= 50:
                     break
 
         summary = {
@@ -118,8 +133,5 @@ class ForensicCarver:
 
     @staticmethod
     def _calculate_sha256(file_path: str) -> str:
-        sha256 = hashlib.sha256()
-        with open(file_path, 'rb') as f:
-            while chunk := f.read(65536):
-                sha256.update(chunk)
-        return sha256.hexdigest()
+        return StreamingImageReader.calculate_sha256(file_path)
+

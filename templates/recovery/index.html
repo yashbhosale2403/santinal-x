@@ -28,16 +28,17 @@
     </div>
 
     <!-- Scanner Setup Form -->
-    <form method="POST" action="/recovery/" class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-card space-y-6">
+    <form method="POST" action="/recovery/" class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-card space-y-6" x-data="{ showAdvancedExt: false, showAdvancedOpts: false, mode: 'DEEP' }">
         {% csrf_token %}
 
+        <!-- STEP 1: Evidence Image & Case -->
         <div class="space-y-4">
             <h2 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-2">STEP 1: Select Forensic Evidence Image & Case</h2>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                 <div>
                     <label class="block font-semibold text-slate-700 mb-1">Evidence Source Image:</label>
-                    <select name="evidence_id" class="w-full bg-slate-50 border border-slate-200 text-slate-900 p-3 rounded-xl font-medium" required>
+                    <select name="evidence_id" class="w-full bg-slate-50 border border-slate-200 text-slate-900 p-3 rounded-xl font-medium" required @change="$el.form.submit()">
                         <option value="">-- Choose Evidence Image --</option>
                         {% for e in evidence_sources %}
                         <option value="{{ e.evidence_id }}" {% if selected_evidence and selected_evidence.evidence_id == e.evidence_id %}selected{% endif %}>
@@ -57,51 +58,196 @@
                     </select>
                 </div>
             </div>
+
+            {% if selected_evidence %}
+            <!-- Selected Evidence Info Bar -->
+            <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3 grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
+                <div>
+                    <span class="text-slate-400 block text-[10px] uppercase font-semibold">Evidence Name</span>
+                    <span class="font-bold text-slate-800 truncate block">{{ selected_evidence.name }}</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block text-[10px] uppercase font-semibold">Size</span>
+                    <span class="font-bold text-slate-800 block">{{ selected_evidence.formatted_size }}</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block text-[10px] uppercase font-semibold">SHA-256 Hash</span>
+                    <span class="font-mono text-slate-700 text-[10px] block truncate" title="{{ selected_evidence.sha256_hash }}">{{ selected_evidence.sha256_hash|slice:":12" }}...</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block text-[10px] uppercase font-semibold">Filesystem / Partition</span>
+                    <span class="font-bold text-teal-700 block">NTFS / GPT</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block text-[10px] uppercase font-semibold">Read-Only Status</span>
+                    <span class="font-bold text-emerald-600 block flex items-center space-x-1">
+                        <i class="fa-solid fa-lock text-[10px]"></i>
+                        <span>LOCKED / ENABLED</span>
+                    </span>
+                </div>
+            </div>
+            {% endif %}
         </div>
 
-        <!-- Step 2: Signature Filter Selection -->
+        <!-- STEP 2: Recovery Mode Selection -->
         <div class="space-y-3 border-t border-slate-100 pt-4">
-            <h2 class="text-sm font-bold text-slate-900">STEP 2: Select File Extension Signatures to Carve</h2>
-            
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-sans">
+            <h2 class="text-sm font-bold text-slate-900">STEP 2: Choose Recovery Depth</h2>
+            <p class="text-xs text-slate-500">Choose how deeply SENTINEL-X should search the evidence.</p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <!-- QUICK MODE -->
+                <label @click="mode = 'QUICK'" :class="mode === 'QUICK' ? 'border-teal-500 bg-teal-50/40' : 'border-slate-200/80 bg-slate-50'" class="p-3.5 rounded-xl border cursor-pointer hover:bg-slate-100 transition flex flex-col justify-between space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-extrabold text-slate-900 text-xs">1. QUICK RECOVERY</span>
+                        <input type="radio" name="recovery_mode" value="QUICK" x-model="mode" class="w-3.5 h-3.5 text-teal-600 border-slate-300">
+                    </div>
+                    <p class="text-[11px] text-slate-500 leading-snug">Recover deleted files using available filesystem metadata first (MFT / Directory Entries).</p>
+                </label>
+
+                <!-- DEEP MODE (DEFAULT) -->
+                <label @click="mode = 'DEEP'" :class="mode === 'DEEP' ? 'border-teal-500 bg-teal-50/40 shadow-xs' : 'border-slate-200/80 bg-slate-50'" class="p-3.5 rounded-xl border cursor-pointer hover:bg-slate-100 transition flex flex-col justify-between space-y-2 relative">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-1.5">
+                            <span class="font-extrabold text-slate-900 text-xs">2. DEEP RECOVERY</span>
+                            <span class="px-1.5 py-0.5 rounded bg-teal-600 text-white text-[9px] font-bold">RECOMMENDED</span>
+                        </div>
+                        <input type="radio" name="recovery_mode" value="DEEP" x-model="mode" class="w-3.5 h-3.5 text-teal-600 border-slate-300">
+                    </div>
+                    <p class="text-[11px] text-slate-500 leading-snug">Metadata + unallocated-space scanning + signature carving + structure validation.</p>
+                </label>
+
+                <!-- MAXIMUM MODE -->
+                <label @click="mode = 'MAXIMUM'" :class="mode === 'MAXIMUM' ? 'border-teal-500 bg-teal-50/40' : 'border-slate-200/80 bg-slate-50'" class="p-3.5 rounded-xl border cursor-pointer hover:bg-slate-100 transition flex flex-col justify-between space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="font-extrabold text-slate-900 text-xs">3. MAXIMUM RECOVERY</span>
+                        <input type="radio" name="recovery_mode" value="MAXIMUM" x-model="mode" class="w-3.5 h-3.5 text-teal-600 border-slate-300">
+                    </div>
+                    <p class="text-[11px] text-slate-500 leading-snug">Uses all safe available recovery methods including metadata, carving, validation and fragment analysis.</p>
+                </label>
+            </div>
+        </div>
+
+        <!-- STEP 3: File Type Categories -->
+        <div class="space-y-3 border-t border-slate-100 pt-4">
+            <div class="flex items-center justify-between">
+                <h2 class="text-sm font-bold text-slate-900">STEP 3: Select File Categories</h2>
+                <button type="button" @click="showAdvancedExt = !showAdvancedExt" class="text-[11px] font-semibold text-teal-600 hover:underline flex items-center space-x-1">
+                    <span x-text="showAdvancedExt ? 'Hide Custom Extensions' : 'Custom / Advanced Extensions'"></span>
+                    <i class="fa-solid fa-chevron-down text-[9px]" :class="showAdvancedExt ? 'rotate-180' : ''"></i>
+                </button>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
                 <label class="flex items-center space-x-2 bg-slate-50 p-3 rounded-xl border border-slate-200/60 cursor-pointer hover:bg-slate-100 transition">
-                    <input type="checkbox" name="extensions" value="jpg" checked class="w-4 h-4 text-teal-600 rounded border-slate-300">
-                    <span class="text-slate-800 font-semibold">JPEG (.jpg)</span>
+                    <input type="checkbox" name="cat_images" checked class="w-4 h-4 text-teal-600 rounded border-slate-300">
+                    <div>
+                        <span class="text-slate-800 font-bold block">Images</span>
+                        <span class="text-[10px] text-slate-400 font-mono">JPG, PNG, GIF, BMP</span>
+                    </div>
                 </label>
                 <label class="flex items-center space-x-2 bg-slate-50 p-3 rounded-xl border border-slate-200/60 cursor-pointer hover:bg-slate-100 transition">
-                    <input type="checkbox" name="extensions" value="png" checked class="w-4 h-4 text-teal-600 rounded border-slate-300">
-                    <span class="text-slate-800 font-semibold">PNG (.png)</span>
+                    <input type="checkbox" name="cat_docs" checked class="w-4 h-4 text-teal-600 rounded border-slate-300">
+                    <div>
+                        <span class="text-slate-800 font-bold block">Documents</span>
+                        <span class="text-[10px] text-slate-400 font-mono">PDF, DOCX</span>
+                    </div>
                 </label>
                 <label class="flex items-center space-x-2 bg-slate-50 p-3 rounded-xl border border-slate-200/60 cursor-pointer hover:bg-slate-100 transition">
-                    <input type="checkbox" name="extensions" value="pdf" checked class="w-4 h-4 text-teal-600 rounded border-slate-300">
-                    <span class="text-slate-800 font-semibold">PDF (.pdf)</span>
+                    <input type="checkbox" name="cat_archives" checked class="w-4 h-4 text-teal-600 rounded border-slate-300">
+                    <div>
+                        <span class="text-slate-800 font-bold block">Archives</span>
+                        <span class="text-[10px] text-slate-400 font-mono">ZIP</span>
+                    </div>
                 </label>
                 <label class="flex items-center space-x-2 bg-slate-50 p-3 rounded-xl border border-slate-200/60 cursor-pointer hover:bg-slate-100 transition">
-                    <input type="checkbox" name="extensions" value="docx" checked class="w-4 h-4 text-teal-600 rounded border-slate-300">
-                    <span class="text-slate-800 font-semibold">DOCX (.docx)</span>
+                    <input type="checkbox" name="cat_audio" class="w-4 h-4 text-teal-600 rounded border-slate-300">
+                    <div>
+                        <span class="text-slate-800 font-bold block">Audio</span>
+                        <span class="text-[10px] text-slate-400 font-mono">MP3, WAV</span>
+                    </div>
                 </label>
                 <label class="flex items-center space-x-2 bg-slate-50 p-3 rounded-xl border border-slate-200/60 cursor-pointer hover:bg-slate-100 transition">
-                    <input type="checkbox" name="extensions" value="zip" checked class="w-4 h-4 text-teal-600 rounded border-slate-300">
-                    <span class="text-slate-800 font-semibold">ZIP (.zip)</span>
+                    <input type="checkbox" name="cat_video" class="w-4 h-4 text-teal-600 rounded border-slate-300">
+                    <div>
+                        <span class="text-slate-800 font-bold block">Video</span>
+                        <span class="text-[10px] text-slate-400 font-mono">MP4</span>
+                    </div>
                 </label>
                 <label class="flex items-center space-x-2 bg-slate-50 p-3 rounded-xl border border-slate-200/60 cursor-pointer hover:bg-slate-100 transition">
-                    <input type="checkbox" name="extensions" value="txt" checked class="w-4 h-4 text-teal-600 rounded border-slate-300">
-                    <span class="text-slate-800 font-semibold">TXT (.txt)</span>
+                    <input type="checkbox" name="cat_text" checked class="w-4 h-4 text-teal-600 rounded border-slate-300">
+                    <div>
+                        <span class="text-slate-800 font-bold block">Text</span>
+                        <span class="text-[10px] text-slate-400 font-mono">TXT</span>
+                    </div>
                 </label>
-                <label class="flex items-center space-x-2 bg-slate-50 p-3 rounded-xl border border-slate-200/60 cursor-pointer hover:bg-slate-100 transition">
-                    <input type="checkbox" name="extensions" value="mp4" class="w-4 h-4 text-teal-600 rounded border-slate-300">
-                    <span class="text-slate-800 font-semibold">MP4 (.mp4)</span>
+            </div>
+
+            <!-- Expandable Custom Extensions -->
+            <div x-show="showAdvancedExt" x-cloak class="pt-2 border-t border-dashed border-slate-200 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                <label class="flex items-center space-x-2 bg-slate-50 p-2 rounded-lg border border-slate-200/60">
+                    <input type="checkbox" name="extensions" value="jpg" checked class="w-3.5 h-3.5 text-teal-600 rounded border-slate-300">
+                    <span class="text-slate-700 font-medium text-[11px]">.jpg</span>
                 </label>
-                <label class="flex items-center space-x-2 bg-slate-50 p-3 rounded-xl border border-slate-200/60 cursor-pointer hover:bg-slate-100 transition">
-                    <input type="checkbox" name="extensions" value="mp3" class="w-4 h-4 text-teal-600 rounded border-slate-300">
-                    <span class="text-slate-800 font-semibold">MP3 (.mp3)</span>
+                <label class="flex items-center space-x-2 bg-slate-50 p-2 rounded-lg border border-slate-200/60">
+                    <input type="checkbox" name="extensions" value="png" checked class="w-3.5 h-3.5 text-teal-600 rounded border-slate-300">
+                    <span class="text-slate-700 font-medium text-[11px]">.png</span>
+                </label>
+                <label class="flex items-center space-x-2 bg-slate-50 p-2 rounded-lg border border-slate-200/60">
+                    <input type="checkbox" name="extensions" value="pdf" checked class="w-3.5 h-3.5 text-teal-600 rounded border-slate-300">
+                    <span class="text-slate-700 font-medium text-[11px]">.pdf</span>
+                </label>
+                <label class="flex items-center space-x-2 bg-slate-50 p-2 rounded-lg border border-slate-200/60">
+                    <input type="checkbox" name="extensions" value="docx" checked class="w-3.5 h-3.5 text-teal-600 rounded border-slate-300">
+                    <span class="text-slate-700 font-medium text-[11px]">.docx</span>
+                </label>
+                <label class="flex items-center space-x-2 bg-slate-50 p-2 rounded-lg border border-slate-200/60">
+                    <input type="checkbox" name="extensions" value="zip" checked class="w-3.5 h-3.5 text-teal-600 rounded border-slate-300">
+                    <span class="text-slate-700 font-medium text-[11px]">.zip</span>
+                </label>
+                <label class="flex items-center space-x-2 bg-slate-50 p-2 rounded-lg border border-slate-200/60">
+                    <input type="checkbox" name="extensions" value="txt" checked class="w-3.5 h-3.5 text-teal-600 rounded border-slate-300">
+                    <span class="text-slate-700 font-medium text-[11px]">.txt</span>
+                </label>
+                <label class="flex items-center space-x-2 bg-slate-50 p-2 rounded-lg border border-slate-200/60">
+                    <input type="checkbox" name="extensions" value="mp4" class="w-3.5 h-3.5 text-teal-600 rounded border-slate-300">
+                    <span class="text-slate-700 font-medium text-[11px]">.mp4</span>
+                </label>
+                <label class="flex items-center space-x-2 bg-slate-50 p-2 rounded-lg border border-slate-200/60">
+                    <input type="checkbox" name="extensions" value="mp3" class="w-3.5 h-3.5 text-teal-600 rounded border-slate-300">
+                    <span class="text-slate-700 font-medium text-[11px]">.mp3</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- STEP 4: Expandable Advanced Options -->
+        <div class="border-t border-slate-100 pt-3">
+            <button type="button" @click="showAdvancedOpts = !showAdvancedOpts" class="w-full flex items-center justify-between py-2 text-xs font-bold text-slate-700 hover:text-slate-900">
+                <span class="flex items-center space-x-2">
+                    <i class="fa-solid fa-sliders text-teal-600"></i>
+                    <span>Advanced Recovery Options</span>
+                </span>
+                <i class="fa-solid fa-chevron-down text-[10px]" :class="showAdvancedOpts ? 'rotate-180' : ''"></i>
+            </button>
+
+            <div x-show="showAdvancedOpts" x-cloak class="pt-3 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <label class="flex items-center space-x-2 bg-slate-50 p-3 rounded-xl border border-slate-200/60 cursor-pointer">
+                    <input type="checkbox" name="opt_validation" checked class="w-4 h-4 text-teal-600 rounded border-slate-300">
+                    <span class="text-slate-800 font-semibold">Structure Validation</span>
+                </label>
+                <label class="flex items-center space-x-2 bg-slate-50 p-3 rounded-xl border border-slate-200/60 cursor-pointer">
+                    <input type="checkbox" name="opt_fragmentation" checked class="w-4 h-4 text-teal-600 rounded border-slate-300">
+                    <span class="text-slate-800 font-semibold">Fragment Reconstruction</span>
+                </label>
+                <label class="flex items-center space-x-2 bg-slate-50 p-3 rounded-xl border border-slate-200/60 cursor-pointer">
+                    <input type="checkbox" name="opt_dedup" checked class="w-4 h-4 text-teal-600 rounded border-slate-300">
+                    <span class="text-slate-800 font-semibold">Deduplicate Results</span>
                 </label>
             </div>
         </div>
 
         <button type="submit" class="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl shadow-xs transition uppercase tracking-wider flex items-center justify-center space-x-2">
             <i class="fa-solid fa-play text-xs"></i>
-            <span>Start Read-Only Forensic Scan & Carving</span>
+            <span>Start Read-Only Forensic Recovery</span>
         </button>
     </form>
 
