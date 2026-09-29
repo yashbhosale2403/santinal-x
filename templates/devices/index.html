@@ -25,25 +25,86 @@
         <div class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-card hover:border-slate-300 transition flex flex-col justify-between space-y-5">
             
             <div class="space-y-3">
-                <div class="flex items-center justify-between">
-                    <span class="px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-wide uppercase bg-slate-100 text-slate-700 border border-slate-200">
-                        {{ d.get_media_type_display }}
-                    </span>
-                    <span class="text-xs font-mono font-bold text-slate-900">{{ d.formatted_capacity }}</span>
+                <!-- Top Row: Media Type & Removable Badge + Capacity -->
+                <div class="flex items-center justify-between gap-2">
+                    <div class="flex items-center space-x-1.5 flex-wrap gap-y-1">
+                        <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide uppercase bg-slate-100 text-slate-700 border border-slate-200 flex items-center space-x-1">
+                            {% if d.media_type == 'USB_FLASH' or d.interface_type == 'USB' or 'USB' in d.name.upper %}
+                                <i class="fa-brands fa-usb text-[10px] text-amber-600"></i>
+                            {% elif d.media_type == 'NVME_SSD' or d.interface_type == 'NVME' or 'NVME' in d.model.upper or 'NVME' in d.name.upper %}
+                                <i class="fa-solid fa-bolt text-[10px] text-teal-600"></i>
+                            {% elif d.media_type == 'SATA_SSD' or 'SSD' in d.model.upper or 'SSD' in d.name.upper %}
+                                <i class="fa-solid fa-microchip text-[10px] text-indigo-600"></i>
+                            {% elif d.media_type == 'SD_CARD' or d.interface_type == 'SD' %}
+                                <i class="fa-solid fa-sd-card text-[10px] text-emerald-600"></i>
+                            {% elif d.media_type == 'TEST_IMAGE' or d.interface_type == 'VIRTUAL' %}
+                                <i class="fa-solid fa-layer-group text-[10px] text-purple-600"></i>
+                            {% else %}
+                                <i class="fa-solid fa-hard-drive text-[10px] text-slate-500"></i>
+                            {% endif %}
+                            <span>{{ d.get_media_type_display }}</span>
+                        </span>
+                        {% if d.removable %}
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase bg-amber-50 text-amber-700 border border-amber-200/80 flex items-center space-x-1" title="Removable external media">
+                            <i class="fa-solid fa-arrow-right-from-bracket text-[9px]"></i>
+                            <span>Removable</span>
+                        </span>
+                        {% else %}
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase bg-slate-50 text-slate-500 border border-slate-200/60" title="Fixed internal storage">
+                            <span>Internal</span>
+                        </span>
+                        {% endif %}
+                    </div>
+                    <span class="text-xs font-mono font-bold text-slate-900 shrink-0">{{ d.formatted_capacity }}</span>
                 </div>
 
+                <!-- Device Name & Distinct Type Symbol -->
                 <div class="space-y-1">
                     <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
-                        <i class="fa-solid {% if d.interface_type == 'USB' %}fa-usb text-amber-500{% elif d.interface_type == 'NVME' %}fa-bolt text-teal-600{% else %}fa-hard-drive text-slate-400{% endif %}"></i>
-                        <span>{{ d.name }}</span>
+                        {% if d.media_type == 'USB_FLASH' or d.interface_type == 'USB' or 'USB' in d.name.upper %}
+                            <i class="fa-brands fa-usb text-amber-500 text-sm shrink-0" title="USB Flash Media"></i>
+                        {% elif d.media_type == 'NVME_SSD' or d.interface_type == 'NVME' or 'NVME' in d.model.upper or 'NVME' in d.name.upper %}
+                            <i class="fa-solid fa-bolt text-teal-600 text-sm shrink-0" title="High-Speed NVMe PCIe"></i>
+                        {% elif d.media_type == 'SATA_SSD' or 'SSD' in d.model.upper or 'SSD' in d.name.upper %}
+                            <i class="fa-solid fa-microchip text-indigo-500 text-sm shrink-0" title="Solid State Drive"></i>
+                        {% elif d.media_type == 'SD_CARD' or d.interface_type == 'SD' %}
+                            <i class="fa-solid fa-sd-card text-emerald-500 text-sm shrink-0" title="SD Card"></i>
+                        {% elif d.media_type == 'TEST_IMAGE' or d.interface_type == 'VIRTUAL' %}
+                            <i class="fa-solid fa-layer-group text-purple-500 text-sm shrink-0" title="Virtual Test Disk"></i>
+                        {% else %}
+                            <i class="fa-solid fa-hard-drive text-slate-400 text-sm shrink-0" title="Hard Disk Drive"></i>
+                        {% endif %}
+                        <span class="truncate">{{ d.name }}</span>
                     </h3>
                     <p class="text-xs text-slate-500 font-mono">{{ d.model|default:"Generic Storage Device" }}</p>
                 </div>
 
-                <div class="text-xs space-y-1 bg-slate-50 p-3 rounded-xl border border-slate-200/60 font-mono text-slate-600">
-                    <div class="flex justify-between"><span>Serial:</span> <strong class="text-slate-800">{{ d.serial_number|default:"N/A" }}</strong></div>
-                    <div class="flex justify-between"><span>Interface:</span> <strong class="text-slate-800">{{ d.get_interface_type_display }}</strong></div>
-                    <div class="flex justify-between"><span>Filesystem:</span> <strong class="text-slate-800">{{ d.filesystem|default:"NTFS/FAT32" }}</strong></div>
+                <!-- Specifications Box -->
+                <div class="text-xs space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200/60 font-mono text-slate-600">
+                    <div class="flex justify-between items-center">
+                        <span>Serial:</span> 
+                        <strong class="text-slate-800 truncate max-w-[170px]" title="{{ d.serial_number|default:'N/A' }}">{{ d.serial_number|default:"N/A" }}</strong>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span>Interface:</span> 
+                        <strong class="text-slate-800">{{ d.get_interface_type_display }}</strong>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span>Type:</span> 
+                        <strong class="{% if d.removable %}text-amber-700{% else %}text-slate-700{% endif %} flex items-center space-x-1">
+                            {% if d.removable %}
+                                <i class="fa-solid fa-arrow-right-from-bracket text-[10px] text-amber-600"></i>
+                                <span>Removable Storage</span>
+                            {% else %}
+                                <i class="fa-solid fa-computer text-[10px] text-slate-400"></i>
+                                <span>Fixed Internal Drive</span>
+                            {% endif %}
+                        </strong>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span>Filesystem:</span> 
+                        <strong class="text-slate-800">{{ d.filesystem|default:"NTFS/FAT32" }}</strong>
+                    </div>
                 </div>
             </div>
 

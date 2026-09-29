@@ -27,15 +27,7 @@ class AuditLogger:
         last_event = AuditEvent.objects.order_by('-timestamp').first()
         prev_hash = last_event.event_hash if last_event and last_event.event_hash else cls.GENESIS_HASH
 
-        timestamp_str = timezone.now().isoformat()
-        details_json = json.dumps(details, sort_keys=True)
-        user_str = str(user.username) if user and hasattr(user, 'username') else 'SYSTEM'
-
-        # 2. Calculate cryptographic SHA-256 hash chain link
-        hash_payload = f"{timestamp_str}:{user_str}:{event_type}:{operation_id}:{details_json}:{prev_hash}"
-        event_hash = hashlib.sha256(hash_payload.encode('utf-8')).hexdigest()
-
-        # 3. Store Audit Event
+        # 2. Store Audit Event
         event = AuditEvent.objects.create(
             user=user if user and user.is_authenticated else None,
             case=case,
@@ -44,8 +36,17 @@ class AuditLogger:
             source_ip=source_ip,
             details=details,
             previous_event_hash=prev_hash,
-            event_hash=event_hash
+            event_hash=''
         )
+
+        timestamp_str = event.timestamp.isoformat()
+        details_json = json.dumps(details, sort_keys=True)
+        user_str = str(user.username) if user and hasattr(user, 'username') else 'SYSTEM'
+
+        # 3. Calculate cryptographic SHA-256 hash chain link
+        hash_payload = f"{timestamp_str}:{user_str}:{event_type}:{operation_id}:{details_json}:{prev_hash}"
+        event.event_hash = hashlib.sha256(hash_payload.encode('utf-8')).hexdigest()
+        event.save(update_fields=['event_hash'])
         return event
 
     @classmethod
@@ -53,6 +54,7 @@ class AuditLogger:
         """
         Recomputes hash chain across all AuditEvents from beginning to end.
         Returns result dict with status 'GREEN' (Integrity Verified) or 'RED' (Tampering Detected).
+        Also returns a list of all tampered event IDs with detailed info for UI highlighting.
         """
         events = list(AuditEvent.objects.order_by('timestamp'))
         if not events:
@@ -60,32 +62,76 @@ class AuditLogger:
                 'status': 'GREEN',
                 'message': 'Audit Log Empty - Integrity Verified',
                 'total_events': 0,
-                'tampered_event_id': None
+                'tampered_event_id': None,
+                'tampered_events': [],
             }
 
         prev_hash = cls.GENESIS_HASH
+        tampered_events = []
+        first_break_event_id = None
+        first_break_index = None
+
         for idx, event in enumerate(events):
-            if idx == 0 and event.previous_event_hash != cls.GENESIS_HASH:
-                # Genesis block check
-                pass
-
-            # Check previous hash link
+            # 1. Check previous hash chain link (does this event's back-pointer match?)
+            chain_broken = False
             if idx > 0 and event.previous_event_hash != prev_hash:
-                return {
-                    'status': 'RED',
-                    'message': f"TAMPERING DETECTED: Disconnected hash link at step #{idx+1} (Event ID: {event.event_id})",
-                    'total_events': len(events),
-                    'tampered_event_id': str(event.event_id),
-                    'broken_index': idx + 1
-                }
+                chain_broken = True
 
+            # 2. Recalculate expected hash to detect direct corruption
+            timestamp_str = event.timestamp.isoformat()
+            details_json = json.dumps(event.details or {}, sort_keys=True)
+            user_str = str(event.user.username) if event.user and hasattr(event.user, 'username') else 'SYSTEM'
+
+            expected_prev = prev_hash
+            hash_payload = f"{timestamp_str}:{user_str}:{event.event_type}:{event.operation_id}:{details_json}:{expected_prev}"
+            expected_hash = hashlib.sha256(hash_payload.encode('utf-8')).hexdigest()
+            hash_corrupted = (event.event_hash != expected_hash)
+
+            if chain_broken or hash_corrupted:
+                reason_parts = []
+                if hash_corrupted:
+                    reason_parts.append("Hash corrupted (stored hash doesn't match recalculated SHA-256)")
+                if chain_broken:
+                    reason_parts.append("Chain link broken (previous_event_hash mismatch)")
+
+                tampered_events.append({
+                    'event_id': str(event.event_id),
+                    'index': idx + 1,
+                    'event_type': event.event_type,
+                    'timestamp': event.timestamp.isoformat(),
+                    'reason': '; '.join(reason_parts),
+                    'hash_corrupted': hash_corrupted,
+                    'chain_broken': chain_broken,
+                    'stored_hash': event.event_hash[:20] + '...',
+                    'expected_hash': expected_hash[:20] + '...',
+                })
+                if first_break_event_id is None:
+                    first_break_event_id = str(event.event_id)
+                    first_break_index = idx + 1
+
+            # Use the STORED hash to continue chain walk (to detect downstream breaks)
             prev_hash = event.event_hash
+
+        if tampered_events:
+            if len(tampered_events) == 1:
+                msg = f"TAMPERING DETECTED: {tampered_events[0]['reason']} at event #{tampered_events[0]['index']}"
+            else:
+                msg = f"TAMPERING DETECTED: {len(tampered_events)} compromised events found in the hash chain"
+            return {
+                'status': 'RED',
+                'message': msg,
+                'total_events': len(events),
+                'tampered_event_id': first_break_event_id,
+                'broken_index': first_break_index,
+                'tampered_events': tampered_events,
+            }
 
         return {
             'status': 'GREEN',
             'message': 'Audit Log Integrity Verified (Hash Chain Intact)',
             'total_events': len(events),
-            'latest_hash': prev_hash
+            'latest_hash': prev_hash,
+            'tampered_events': [],
         }
 
     @classmethod

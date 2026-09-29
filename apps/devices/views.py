@@ -9,13 +9,17 @@ def device_list(request):
     # Refresh devices on scan button click
     if request.GET.get('rescan') == '1':
         detected = DeviceDetector.detect_all_devices()
+        current_ids = set()
         for d in detected:
+            current_ids.add(d['device_id'])
             StorageDevice.objects.update_or_create(
                 device_id=d['device_id'],
                 defaults=d
             )
+        # Prune stale or duplicate devices that are no longer detected
+        StorageDevice.objects.exclude(device_id__in=current_ids).delete()
         AuditLogger.log_event('DEVICE_DISCOVERY_SCAN', user=request.user if request.user.is_authenticated else None, details={'count': len(detected)})
-        messages.success(request, f"Device Discovery Engine found {len(detected)} physical/virtual storage devices.")
+        messages.success(request, f"Device Discovery Engine synchronized: {len(detected)} storage device(s) active.")
         return redirect('/devices/')
 
     devices = StorageDevice.objects.all()

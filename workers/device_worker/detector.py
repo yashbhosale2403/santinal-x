@@ -14,6 +14,7 @@ class DeviceDetector:
     def detect_all_devices() -> List[Dict[str, Any]]:
         devices = []
         seen_serials = set()
+        seen_mounts = set()
 
         # 1. Windows WMI Detection (Primary for Windows Physical & USB Drives)
         if platform.system() == 'Windows':
@@ -26,7 +27,7 @@ class DeviceDetector:
                     model = (disk.Model or "Physical Storage Drive").strip()
                     caption = (disk.Caption or model).strip()
                     interface = disk.InterfaceType or "SATA"
-                    if "NVMe" in model.upper() or "NVME" in model.upper():
+                    if "NVMe" in model.upper() or "NVME" in model.upper() or "SN7" in model.upper():
                         interface = "NVME"
                         media_type = "NVME_SSD"
                     elif interface.upper() == "USB" or "USB" in model.upper() or disk.MediaType == "Removable Media":
@@ -47,7 +48,9 @@ class DeviceDetector:
                         for partition in disk.associators("Win32_DiskDriveToDiskPartition"):
                             for logical_disk in partition.associators("Win32_LogicalDiskToPartition"):
                                 if logical_disk.DeviceID:
-                                    drive_letters.append(logical_disk.DeviceID)
+                                    dl = logical_disk.DeviceID.strip()
+                                    drive_letters.append(dl)
+                                    seen_mounts.add(dl.upper().rstrip('\\'))
                     except Exception:
                         pass
 
@@ -91,6 +94,12 @@ class DeviceDetector:
                 fstype = p.fstype or 'NTFS/FAT32'
                 is_removable = 'removable' in opts or 'cdrom' in opts or 'usb' in opts
                 serial_fallback = f"SN-PART-{hash(p.device) % 100000:05d}"
+
+                # Skip if already detected as a physical disk or mapped volume
+                p_dev = p.device.replace('\\', '').strip().upper()
+                p_mount = mount.replace('\\', '').strip().upper()
+                if p_dev in seen_mounts or p_mount in seen_mounts:
+                    continue
 
                 if any(m in p.device for m in seen_serials):
                     continue

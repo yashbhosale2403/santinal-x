@@ -19,7 +19,7 @@
 
         <div class="flex flex-wrap items-center gap-3 shrink-0">
             <a href="/audit/verify/" class="px-4 py-2.5 bg-[#4FD1C5] hover:bg-teal-500 text-white font-extrabold text-xs rounded-xl shadow-purity-teal transition flex items-center space-x-2 shrink-0">
-                <i class="fa-solid fa-shield-check text-xs"></i>
+                <i class="fa-solid fa-circle-check text-xs"></i>
                 <span>Verify Integrity</span>
             </a>
             <a href="/audit/tamper-demo/" class="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs rounded-xl border border-rose-200/80 transition flex items-center space-x-2 shrink-0">
@@ -34,9 +34,9 @@
     </div>
 
     <!-- Integrity Status Banner -->
-    <div class="p-5 rounded-3xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-purity-card {% if integrity_res.status == 'GREEN' %}bg-teal-50/60 border-teal-200 text-teal-900{% else %}bg-rose-50 border-rose-200 text-rose-900 animate-pulse{% endif %} text-xs">
+    <div class="p-5 rounded-3xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-purity-card {% if integrity_res.status == 'GREEN' %}bg-teal-50/60 border-teal-200 text-teal-900{% else %}bg-rose-50 border-rose-200 text-rose-900{% endif %} text-xs">
         <div class="flex items-center space-x-3">
-            <div class="w-10 h-10 rounded-2xl {% if integrity_res.status == 'GREEN' %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}bg-rose-500 text-white shadow-md{% endif %} flex items-center justify-center font-bold text-base shrink-0">
+            <div class="w-10 h-10 rounded-2xl {% if integrity_res.status == 'GREEN' %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}bg-rose-500 text-white shadow-md animate-pulse{% endif %} flex items-center justify-center font-bold text-base shrink-0">
                 <i class="fa-solid {% if integrity_res.status == 'GREEN' %}fa-check{% else %}fa-triangle-exclamation{% endif %}"></i>
             </div>
             <div>
@@ -57,18 +57,106 @@
         </div>
     </div>
 
+    <!-- ==================== TAMPER FORENSIC DETAILS PANEL ==================== -->
+    {% if tampered_events %}
+    <div class="bg-rose-50/80 border-2 border-rose-300 rounded-3xl shadow-purity-card overflow-hidden" id="tamper-details">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-rose-600 to-rose-500 text-white px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center text-lg animate-pulse">
+                    <i class="fa-solid fa-fingerprint"></i>
+                </div>
+                <div>
+                    <div class="font-extrabold text-sm uppercase tracking-wider">Tamper Forensic Analysis</div>
+                    <div class="text-[11px] text-rose-100 font-medium">{{ tampered_events|length }} compromised event{{ tampered_events|length|pluralize }} identified in hash chain</div>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span class="px-3 py-1 bg-white/20 rounded-full text-[10px] font-extrabold uppercase tracking-widest animate-pulse">
+                    <i class="fa-solid fa-circle-exclamation mr-1"></i> ALERT
+                </span>
+            </div>
+        </div>
+
+        <!-- Tampered Events Detail Cards -->
+        <div class="p-6 space-y-4">
+            {% for te in tampered_events %}
+            <div class="bg-white border-2 border-rose-300 rounded-2xl p-5 shadow-md relative overflow-hidden">
+                <!-- Red accent bar -->
+                <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-rose-500 rounded-l-2xl"></div>
+                
+                <div class="pl-4 space-y-3">
+                    <!-- Event identity row -->
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center font-extrabold text-sm shrink-0">
+                                #{{ te.index }}
+                            </div>
+                            <div>
+                                <div class="font-extrabold text-sm text-slate-900 flex items-center space-x-2 flex-wrap gap-y-1">
+                                    <span>{{ te.event_type }}</span>
+                                    {% if te.hash_corrupted %}
+                                    <span class="px-2 py-0.5 bg-rose-500 text-white text-[9px] font-extrabold rounded-md uppercase tracking-wider animate-pulse">HASH CORRUPTED</span>
+                                    {% endif %}
+                                    {% if te.chain_broken %}
+                                    <span class="px-2 py-0.5 bg-amber-500 text-white text-[9px] font-extrabold rounded-md uppercase tracking-wider">CHAIN BROKEN</span>
+                                    {% endif %}
+                                </div>
+                                <div class="text-[11px] text-slate-400 font-medium mt-0.5">Event ID: <span class="font-mono text-[10px]">{{ te.event_id }}</span></div>
+                            </div>
+                        </div>
+                        <div class="text-[11px] text-slate-500 font-mono shrink-0">{{ te.timestamp }}</div>
+                    </div>
+
+                    <!-- Reason -->
+                    <div class="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 font-semibold flex items-start space-x-2">
+                        <i class="fa-solid fa-magnifying-glass text-rose-500 mt-0.5 shrink-0"></i>
+                        <span>{{ te.reason }}</span>
+                    </div>
+
+                    <!-- Hash comparison -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            <div class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Stored Hash</div>
+                            <div class="font-mono text-[11px] font-bold text-rose-600 break-all">{{ te.stored_hash }}</div>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            <div class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Expected Hash (Recalculated)</div>
+                            <div class="font-mono text-[11px] font-bold text-teal-700 break-all">{{ te.expected_hash }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Action bar -->
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2">
+                <div class="text-[11px] text-rose-600 font-bold flex items-center space-x-1.5">
+                    <i class="fa-solid fa-arrow-down animate-bounce"></i>
+                    <span>Affected rows are highlighted in the event table below</span>
+                </div>
+                <a href="/audit/reset/" class="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center space-x-2 uppercase tracking-wider shrink-0">
+                    <i class="fa-solid fa-wrench"></i>
+                    <span>Repair & Restore Chain</span>
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Audit Events Table -->
     <div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-purity-card space-y-4">
         <div class="flex items-center justify-between px-1">
             <h2 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider">Historical Audit Logs</h2>
-            <span class="text-xs text-slate-400 font-mono" x-text="'Showing latest ' + {{ events|length }} + ' events'"></span>
+            <span class="text-xs text-slate-400 font-mono">Showing {{ events|length }} events</span>
         </div>
 
         <div class="overflow-x-auto">
             <table class="w-full text-left text-xs font-sans text-slate-600">
                 <thead class="bg-slate-50 text-slate-500 border-b border-slate-100 uppercase tracking-wider text-[10px] font-extrabold">
                     <tr>
-                        <th class="py-3.5 px-4 rounded-l-xl">Timestamp</th>
+                        <th class="py-3.5 px-4 rounded-l-xl w-24">Status</th>
+                        <th class="py-3.5 px-4">Timestamp</th>
                         <th class="py-3.5 px-4">Event Type</th>
                         <th class="py-3.5 px-4">User</th>
                         <th class="py-3.5 px-4">Previous Event Hash</th>
@@ -77,18 +165,38 @@
                 </thead>
                 <tbody class="divide-y divide-slate-100 font-mono text-[11px]">
                     {% for event in events %}
-                    <tr class="hover:bg-slate-50/80 transition">
+                    <tr class="transition {% if event.is_tampered %}bg-rose-50/80 tampered-row{% else %}hover:bg-slate-50/80{% endif %}"
+                        id="event-{{ event.event_id }}">
+                        <!-- Status indicator -->
+                        <td class="py-3 px-4">
+                            {% if event.is_tampered %}
+                            <div class="flex items-center space-x-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse shrink-0 shadow-sm shadow-rose-300"></span>
+                                <span class="text-[9px] font-extrabold text-rose-600 uppercase tracking-wider">TAMPERED</span>
+                            </div>
+                            {% else %}
+                            <div class="flex items-center space-x-1.5">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0"></span>
+                                <span class="text-[9px] font-extrabold text-emerald-600 uppercase tracking-wider">OK</span>
+                            </div>
+                            {% endif %}
+                        </td>
                         <td class="py-3 px-4 text-slate-500 font-sans text-xs font-medium">{{ event.timestamp|date:"Y-m-d H:i:s UTC" }}</td>
                         <td class="py-3 px-4 font-extrabold font-sans text-xs text-slate-800">
-                            <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700">{{ event.event_type }}</span>
+                            <span class="px-2 py-0.5 rounded-md {% if event.is_tampered %}bg-rose-100 text-rose-700 border border-rose-200{% else %}bg-slate-100 text-slate-700{% endif %}">{{ event.event_type }}</span>
                         </td>
                         <td class="py-3 px-4 font-sans font-semibold text-slate-600">{{ event.user.username|default:"SYSTEM" }}</td>
                         <td class="py-3 px-4 text-slate-400 font-mono text-[11px]">{{ event.previous_event_hash|slice:":20" }}...</td>
-                        <td class="py-3 px-4 text-teal-700 font-bold font-mono text-[11px]">{{ event.event_hash|slice:":20" }}...</td>
+                        <td class="py-3 px-4 font-bold font-mono text-[11px] {% if event.is_tampered %}text-rose-600{% else %}text-teal-700{% endif %}">
+                            {{ event.event_hash|slice:":20" }}...
+                            {% if event.is_tampered %}
+                            <i class="fa-solid fa-triangle-exclamation text-rose-500 ml-1 text-[10px]"></i>
+                            {% endif %}
+                        </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="py-8 text-center text-slate-400 font-sans font-medium">No audit events recorded yet.</td>
+                        <td colspan="6" class="py-8 text-center text-slate-400 font-sans font-medium">No audit events recorded yet.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -97,4 +205,30 @@
     </div>
 
 </div>
+
+<!-- Auto-scroll to tamper details if tampering detected -->
+{% if tampered_events %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Smooth scroll to the forensic panel
+        const tamperPanel = document.getElementById('tamper-details');
+        if (tamperPanel) {
+            setTimeout(function() {
+                tamperPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 300);
+        }
+    });
+</script>
+{% endif %}
+
+<style>
+    /* Pulsing red left-border glow on tampered rows */
+    @keyframes tamperGlow {
+        0%, 100% { box-shadow: inset 4px 0 0 0 rgba(239, 68, 68, 0.6), inset 0 0 0 0 rgba(239, 68, 68, 0); }
+        50% { box-shadow: inset 4px 0 0 0 rgba(239, 68, 68, 1), inset 0 0 16px rgba(239, 68, 68, 0.06); }
+    }
+    .tampered-row {
+        animation: tamperGlow 2s ease-in-out infinite;
+    }
+</style>
 {% endblock %}

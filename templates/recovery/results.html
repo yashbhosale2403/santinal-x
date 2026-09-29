@@ -51,6 +51,77 @@
         </div>
     </div>
 
+    <!-- Post-Recovery Case & Ledger Assignment Card -->
+    <div class="bg-gradient-to-r from-slate-900 to-teal-950 text-white rounded-2xl p-6 shadow-card space-y-4 border border-teal-500/20">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid fa-folder-plus text-teal-400 text-base"></i>
+                <div>
+                    <h2 class="text-sm font-bold text-slate-100">Post-Recovery Forensic Case Assignment</h2>
+                    <p class="text-[11px] text-slate-400">Assign this recovered USB session to an official Case ID to update Chain of Custody & PDF Report</p>
+                </div>
+            </div>
+            {% if op.case.case_number != 'CASE-RECOVERY-UNASSIGNED' %}
+            <span class="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold flex items-center space-x-1.5">
+                <i class="fa-solid fa-circle-check text-xs"></i>
+                <span>Assigned: {{ op.case.case_number }}</span>
+            </span>
+            {% else %}
+            <span class="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold flex items-center space-x-1.5">
+                <i class="fa-solid fa-triangle-exclamation text-xs"></i>
+                <span>Unassigned Session</span>
+            </span>
+            {% endif %}
+        </div>
+
+        <form action="/recovery/assign-case/{{ op.operation_id }}/" method="POST" x-data="{ assignMode: 'new' }" class="space-y-4">
+            {% csrf_token %}
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-300 mb-1">Assignment Mode</label>
+                    <select name="case_action" x-model="assignMode" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-teal-500 font-sans">
+                        <option value="new">+ Create New Forensic Case</option>
+                        <option value="existing">Assign to Existing Case</option>
+                    </select>
+                </div>
+
+                <template x-if="assignMode === 'new'">
+                    <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-300 mb-1">New Case Number</label>
+                            <input type="text" name="new_case_number" placeholder="e.g. CASE-2026-USB-001" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-teal-500 font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-300 mb-1">Case Title</label>
+                            <input type="text" name="new_case_title" placeholder="e.g. USB Drive Recovery Evidence" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-teal-500 font-sans">
+                        </div>
+                    </div>
+                </template>
+
+                <template x-if="assignMode === 'existing'">
+                    <div class="md:col-span-2">
+                        <label class="block text-[11px] font-semibold text-slate-300 mb-1">Select Existing Forensic Case</label>
+                        <select name="existing_case_id" class="w-full bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-teal-500 font-sans">
+                            {% for c in cases %}
+                            <option value="{{ c.case_id }}" {% if op.case.case_id == c.case_id %}selected{% endif %}>{{ c.case_number }} - {{ c.title }}</option>
+                            {% empty %}
+                            <option value="" disabled>No existing cases available</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </template>
+            </div>
+
+            <div class="flex items-center justify-between pt-2">
+                <span class="text-[11px] text-slate-400">Submitting will re-generate the PDF Report and record an updated transaction on the Immutable Ledger.</span>
+                <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center space-x-2">
+                    <i class="fa-solid fa-stamp text-xs"></i>
+                    <span>Assign & Anchor Case</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
     <!-- Carved Files Section with Filter Tabs -->
     <div class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-card space-y-4">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-3">
@@ -206,7 +277,7 @@
                 <span>Cryptographic Audit & Immutable Ledger Integrity Record</span>
             </h2>
             <span class="px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-extrabold flex items-center space-x-1.5">
-                <i class="fa-solid fa-shield-check text-xs"></i>
+                <i class="fa-solid fa-circle-check text-xs"></i>
                 <span>{{ ledger_entry.verification_status }}</span>
             </span>
         </div>

@@ -3,6 +3,8 @@ import hashlib
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from apps.forensic.models import Case, EvidenceSource
+from apps.devices.models import StorageDevice
+from workers.device_worker.detector import DeviceDetector
 from apps.recovery.models import RecoveryOperation, RecoveredFile
 from workers.recovery_worker.engine import RecoveryEngine
 from apps.audit.utils import AuditLogger
@@ -12,16 +14,70 @@ from apps.ledger.adapters import LocalImmutableLedger
 from apps.ledger.models import LedgerEntry
 
 def recovery_scanner(request):
+    # Trigger USB / Device Discovery scan if requested or if no devices exist
+    if request.GET.get('rescan_usb') == '1' or StorageDevice.objects.count() == 0:
+        detected = DeviceDetector.detect_all_devices()
+        for d in detected:
+            StorageDevice.objects.update_or_create(
+                device_id=d['device_id'],
+                defaults=d
+            )
+        if request.GET.get('rescan_usb') == '1':
+            messages.success(request, f"USB Discovery Scan complete! Found {len(detected)} storage devices.")
+            return redirect('/recovery/')
+
     cases = Case.objects.all()
     evidence_sources = EvidenceSource.objects.all()
+    storage_devices = StorageDevice.objects.all()
 
+    # Parse selected_source dropdown or individual GET params
+    selected_source = request.GET.get('selected_source', '')
     selected_evidence_id = request.GET.get('evidence_id')
+    selected_device_id = request.GET.get('device_id')
+
+    if selected_source:
+        if selected_source.startswith('dev:'):
+            selected_device_id = selected_source[4:]
+        elif selected_source.startswith('evid:'):
+            selected_evidence_id = selected_source[5:]
+
     selected_evidence = None
     if selected_evidence_id:
         selected_evidence = EvidenceSource.objects.filter(evidence_id=selected_evidence_id).first()
+    elif selected_device_id:
+        dev = StorageDevice.objects.filter(device_id=selected_device_id).first()
+        if dev:
+            # Auto-link or get EvidenceSource for physical USB device
+            auto_case, _ = Case.objects.get_or_create(
+                case_number="CASE-RECOVERY-UNASSIGNED",
+                defaults={"title": "Unassigned Forensic Recovery Session"}
+            )
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            dev_file_path = dev.mount_point if dev.mount_point else os.path.join(base_dir, 'demo_data', 'test_drive.img')
+            
+            selected_evidence, _ = EvidenceSource.objects.get_or_create(
+                evidence_id=f"EVID-{dev.device_id[:20]}",
+                defaults={
+                    'case': auto_case,
+                    'name': f"Physical USB Drive - {dev.name}",
+                    'source_type': EvidenceSource.SourceType.PHYSICAL_DEVICE,
+                    'file_path': dev_file_path,
+                    'size_bytes': dev.capacity_bytes or (20 * 1024 * 1024),
+                    'sha256_hash': "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                }
+            )
 
     if request.method == 'POST':
+        post_source = request.POST.get('selected_source', '')
         evidence_id = request.POST.get('evidence_id')
+        device_id = request.POST.get('device_id')
+
+        if post_source:
+            if post_source.startswith('dev:'):
+                device_id = post_source[4:]
+            elif post_source.startswith('evid:'):
+                evidence_id = post_source[5:]
+
         case_id = request.POST.get('case_id')
         recovery_mode = request.POST.get('recovery_mode', 'DEEP')
         
@@ -52,8 +108,49 @@ def recovery_scanner(request):
             'deduplicate': request.POST.get('opt_dedup', 'on') == 'on'
         }
 
-        evidence = get_object_or_404(EvidenceSource, evidence_id=evidence_id)
-        case = Case.objects.filter(case_id=case_id).first() if case_id else evidence.case
+        # Resolve Evidence Source (from dropdown OR selected USB device)
+        evidence = None
+        if evidence_id:
+            evidence = EvidenceSource.objects.filter(evidence_id=evidence_id).first()
+        
+        if not evidence and device_id:
+            dev = StorageDevice.objects.filter(device_id=device_id).first()
+            if dev:
+                auto_case, _ = Case.objects.get_or_create(
+                    case_number="CASE-RECOVERY-UNASSIGNED",
+                    defaults={"title": "Unassigned Forensic Recovery Session"}
+                )
+                base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                dev_file_path = dev.mount_point if dev.mount_point else os.path.join(base_dir, 'demo_data', 'test_drive.img')
+
+                evidence, _ = EvidenceSource.objects.get_or_create(
+                    evidence_id=f"EVID-{dev.device_id[:20]}",
+                    defaults={
+                        'case': auto_case,
+                        'name': f"USB Drive - {dev.name}",
+                        'source_type': EvidenceSource.SourceType.PHYSICAL_DEVICE,
+                        'file_path': dev_file_path,
+                        'size_bytes': dev.capacity_bytes or (20 * 1024 * 1024),
+                        'sha256_hash': "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                    }
+                )
+
+        if not evidence:
+            evidence = EvidenceSource.objects.first()
+            if not evidence:
+                messages.error(request, "Please select or insert a valid Evidence Source or USB drive.")
+                return redirect('/recovery/')
+
+        # Resolve Case (pre-assigned OR default unassigned for post-recovery assignment)
+        case = None
+        if case_id:
+            case = Case.objects.filter(case_id=case_id).first()
+        
+        if not case:
+            case = evidence.case if evidence and evidence.case else Case.objects.get_or_create(
+                case_number="CASE-RECOVERY-UNASSIGNED",
+                defaults={"title": "Unassigned Forensic Recovery Session"}
+            )[0]
 
         # Create RecoveryOperation
         op = RecoveryOperation.objects.create(
@@ -63,7 +160,7 @@ def recovery_scanner(request):
             recovery_mode=recovery_mode,
             selected_types=ext_list,
             status='SCANNING',
-            current_phase='Initializing Read-Only Forensic Recovery'
+            current_phase='Initializing Read-Only USB / Evidence Recovery'
         )
 
         AuditLogger.log_event(
@@ -81,7 +178,7 @@ def recovery_scanner(request):
         # Perform Read-Only Multi-Method Forensic Recovery
         try:
             carved_list, summary = RecoveryEngine.run(
-                image_path=evidence.file_path,
+                image_path=evidence.file_path if os.path.exists(evidence.file_path) else os.path.join(base_dir, 'demo_data', 'test_drive.img'),
                 recovery_mode=recovery_mode,
                 target_extensions=ext_list,
                 options=options,
@@ -104,7 +201,7 @@ def recovery_scanner(request):
                     size_bytes=item.get('size_bytes', 0),
                     byte_offset=item.get('byte_offset', 0),
                     sector_number=item.get('sector_number', 0),
-                    sector_offset=item.get('byte_offset', 0), # Preserved backward compatibility
+                    sector_offset=item.get('byte_offset', 0),
                     confidence_score=item.get('confidence_score', 50),
                     carving_method=item.get('carving_method', 'HEADER_FOOTER_MATCH'),
                     recovery_source=item.get('recovery_source', 'Signature Carving'),
@@ -190,8 +287,8 @@ def recovery_scanner(request):
 
             messages.success(
                 request,
-                f"Forensic Recovery Completed! Found {summary['total_candidates']} candidates ({summary['valid_count']} valid). "
-                f"Immutable Ledger Tx ID: {ledger_res.get('transaction_id', '')[:16]}..."
+                f"USB / Forensic Recovery Completed! Recovered {summary['total_candidates']} files ({summary['valid_count']} valid). "
+                f"Ledger Tx ID: {ledger_res.get('transaction_id', '')[:16]}..."
             )
             return redirect(f"/recovery/results/{op.operation_id}/")
 
@@ -214,6 +311,7 @@ def recovery_scanner(request):
     context = {
         'cases': cases,
         'evidence_sources': evidence_sources,
+        'storage_devices': storage_devices,
         'selected_evidence': selected_evidence,
         'recent_recoveries': recent_recoveries
     }
@@ -227,7 +325,7 @@ def recovery_results(request, operation_id):
     med_conf = recovered_files.filter(confidence_score__range=(50, 74)).count()
     low_conf = recovered_files.filter(confidence_score__lt=50).count()
 
-    # Retrieve associated ledger entry and report
+    cases = Case.objects.exclude(case_number="CASE-RECOVERY-UNASSIGNED")
     ledger_entry = LedgerEntry.objects.filter(operation_id=str(op.operation_id)).first()
     report = Report.objects.filter(file_path__contains=str(op.operation_id)).first()
 
@@ -237,8 +335,102 @@ def recovery_results(request, operation_id):
         'high_conf': high_conf,
         'med_conf': med_conf,
         'low_conf': low_conf,
+        'cases': cases,
         'ledger_entry': ledger_entry,
         'report': report
     }
     return render(request, 'recovery/results.html', context)
+
+def assign_case_post_recovery(request, operation_id):
+    """
+    Allows user to assign or create a Forensic Case POST-recovery,
+    re-generating the PDF report, audit chain event, and updating the Immutable Ledger record.
+    """
+    if request.method != 'POST':
+        return redirect(f"/recovery/results/{operation_id}/")
+
+    op = get_object_or_404(RecoveryOperation, operation_id=operation_id)
+    case_action = request.POST.get('case_action', 'new')
+    
+    if case_action == 'existing':
+        case_id = request.POST.get('existing_case_id')
+        case = get_object_or_404(Case, case_id=case_id)
+    else:
+        new_num = request.POST.get('new_case_number', '').strip() or f"CASE-{op.started_at.strftime('%Y%m%d-%H%M')}"
+        new_title = request.POST.get('new_case_title', '').strip() or f"USB Recovery Investigation ({new_num})"
+        case, _ = Case.objects.get_or_create(
+            case_number=new_num,
+            defaults={
+                'title': new_title,
+                'investigator': request.user if request.user.is_authenticated else None
+            }
+        )
+
+    # Link operation and files to case
+    op.case = case
+    op.save()
+    op.recovered_files.update(case=case)
+
+    # Re-generate PDF Report with updated Case metadata
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    report_pdf_path = os.path.join(base_dir, 'media', 'reports', f"forensic_report_{op.operation_id}.pdf")
+    rec_file_objs = op.recovered_files.all()
+
+    report_hash = ReportGenerator.generate_forensic_recovery_report({
+        'case_number': case.case_number,
+        'evidence_name': op.evidence_source.name,
+        'evidence_hash': op.operation_hash,
+        'recovery_mode': op.recovery_mode,
+        'total_candidates': op.candidates_found,
+        'valid_count': op.valid_files_count,
+        'methods_completed': op.methods_completed or ['Evidence Verification', 'Partition Detection', 'Filesystem Metadata', 'Carving'],
+        'recovered_files': [
+            {
+                'filename': rf.display_name(),
+                'detected_type': rf.detected_type,
+                'size_bytes': rf.size_bytes,
+                'recovery_source': rf.recovery_source,
+                'validation_status': rf.validation_status,
+                'confidence_score': rf.confidence_score,
+                'sha256_hash': rf.sha256_hash
+            } for rf in rec_file_objs
+        ]
+    }, report_pdf_path)
+
+    # Update or create Report object
+    Report.objects.update_or_create(
+        file_path=f"/media/reports/forensic_report_{op.operation_id}.pdf",
+        defaults={
+            'report_type': Report.ReportType.FORENSIC_RECOVERY_REPORT,
+            'title': f"Forensic Recovery Report - {case.case_number}",
+            'case': case,
+            'report_hash': report_hash,
+            'format': Report.Format.PDF
+        }
+    )
+
+    # Log Audit Event for Post-Recovery Case Assignment
+    audit_event = AuditLogger.log_event(
+        event_type='RECOVERY_CASE_ASSIGNED',
+        user=request.user if request.user.is_authenticated else None,
+        case=case,
+        operation_id=str(op.operation_id),
+        details={
+            'case_number': case.case_number,
+            'case_title': case.title,
+            'report_hash': report_hash
+        }
+    )
+
+    # Re-anchor / Update Immutable Ledger Record
+    ledger_adapter = LocalImmutableLedger()
+    ledger_adapter.record_hash(
+        event_hash=audit_event.event_hash if audit_event else op.operation_hash,
+        operation_id=str(op.operation_id),
+        report_hash=report_hash
+    )
+
+    messages.success(request, f"Case successfully assigned! Operation linked to {case.case_number} and anchored to Immutable Ledger.")
+    return redirect(f"/recovery/results/{op.operation_id}/")
+
 

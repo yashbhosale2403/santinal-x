@@ -4,12 +4,31 @@ from apps.audit.models import AuditEvent
 from apps.audit.utils import AuditLogger
 
 def audit_trail_view(request):
-    events = AuditEvent.objects.order_by('-timestamp')
+    events = list(AuditEvent.objects.order_by('-timestamp'))
     integrity_res = AuditLogger.verify_audit_integrity()
+    
+    # Build lookup dict of tampered event details for row highlighting
+    tampered_lookup = {
+        te['event_id']: te 
+        for te in integrity_res.get('tampered_events', [])
+    }
+    
+    # Annotate each event with tamper status for easy template access
+    for event in events:
+        event_id_str = str(event.event_id)
+        if event_id_str in tampered_lookup:
+            event.is_tampered = True
+            event.tamper_info = tampered_lookup[event_id_str]
+        else:
+            event.is_tampered = False
+            event.tamper_info = None
     
     context = {
         'events': events,
-        'integrity_res': integrity_res
+        'integrity_res': integrity_res,
+        'tampered_event_id': integrity_res.get('tampered_event_id', ''),
+        'broken_index': integrity_res.get('broken_index', ''),
+        'tampered_events': integrity_res.get('tampered_events', []),
     }
     return render(request, 'audit/index.html', context)
 
