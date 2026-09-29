@@ -24,7 +24,8 @@ class RecoveryEngine:
         recovery_mode: str = 'DEEP',
         target_extensions: List[str] = None,
         options: Dict[str, Any] = None,
-        output_dir: str = ''
+        output_dir: str = '',
+        progress_callback = None
     ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
         """
         Executes multi-method forensic recovery pipeline based on recovery_mode (QUICK, DEEP, MAXIMUM).
@@ -40,10 +41,16 @@ class RecoveryEngine:
         methods_completed = []
         methods_skipped = []
 
+        if progress_callback:
+            progress_callback(10, 'Evidence Verification', 'Computing read-only source evidence SHA-256 seal...')
+
         # Step 1: Pre-operation Evidence SHA-256 calculation
         evidence_hash_before = StreamingImageReader.calculate_sha256(image_path)
         methods_attempted.append("Evidence Verification (Read-Only SHA-256)")
         methods_completed.append("Evidence Verification (Read-Only SHA-256)")
+
+        if progress_callback:
+            progress_callback(25, 'Partition & Filesystem Analysis', 'Detecting partition schemes and filesystem structures...')
 
         # Step 2: Partition Detection
         methods_attempted.append("Partition Scheme Detection")
@@ -57,6 +64,9 @@ class RecoveryEngine:
         methods_completed.append("Filesystem Identification")
 
         all_candidates = []
+
+        if progress_callback:
+            progress_callback(40, 'Filesystem Metadata Carving', 'Scanning MFT records and deleted directory entries...')
 
         # Step 4: Filesystem-Aware Metadata Recovery (MFT / Directory Entries)
         methods_attempted.append("Filesystem Metadata Recovery (NTFS MFT / Directory Entries)")
@@ -74,6 +84,9 @@ class RecoveryEngine:
         except Exception as e:
             methods_skipped.append(f"Filesystem Metadata Recovery (Error: {str(e)})")
 
+        if progress_callback:
+            progress_callback(60, 'Signature Carving', f'Streaming unallocated space for file signatures ({len(all_candidates)} candidates found)...', len(all_candidates), 0)
+
         # Step 5: Unallocated Space Signature Carving (For DEEP and MAXIMUM modes)
         if recovery_mode in ['DEEP', 'MAXIMUM']:
             methods_attempted.append("Unallocated Space Signature Carving (Streaming)")
@@ -89,6 +102,9 @@ class RecoveryEngine:
                 methods_skipped.append(f"Unallocated Space Signature Carving (Error: {str(e)})")
         else:
             methods_skipped.append("Unallocated Space Signature Carving (Skipped in QUICK mode)")
+
+        if progress_callback:
+            progress_callback(75, 'Structure Validation & Fragment Analysis', f'Analyzing fragment continuity and validating headers ({len(all_candidates)} artifacts)...', len(all_candidates), 0)
 
         # Step 6: Fragment Reconstruction & Structure Analysis (For MAXIMUM mode or options)
         methods_attempted.append("Fragment Reconstruction & Structure Analysis")
@@ -109,6 +125,9 @@ class RecoveryEngine:
         else:
             methods_skipped.append("Fragment Reconstruction (Skipped by selected mode/options)")
 
+        if progress_callback:
+            progress_callback(85, 'Artifact Fusion & Deduplication', 'Fusing recovered metadata with raw carved files...', len(all_candidates), 0)
+
         # Step 7: Artifact Fusion & Deduplication
         methods_attempted.append("Artifact Fusion & Deduplication")
         fused_candidates, fusion_summary = ArtifactFusion.fuse_artifacts(
@@ -116,6 +135,10 @@ class RecoveryEngine:
             deduplicate=options.get('deduplicate', True)
         )
         methods_completed.append("Artifact Fusion & Deduplication")
+
+        if progress_callback:
+            valid_so_far = sum(1 for a in fused_candidates if a.get('validation_status') == 'VALID')
+            progress_callback(92, 'Analytical Confidence Scoring', 'Computing forensic confidence scores and SHA-256 digests...', len(fused_candidates), valid_so_far)
 
         # Step 8: Analytical Confidence Scoring
         for item in fused_candidates:
@@ -127,6 +150,10 @@ class RecoveryEngine:
                 fragment_status=item.get('reconstruction_status', 'SUCCESS')
             )
             item['confidence_score'] = score
+
+        if progress_callback:
+            valid_cnt = sum(1 for a in fused_candidates if a.get('validation_status') == 'VALID')
+            progress_callback(96, 'Verifying Evidence Integrity', 'Verifying post-operation evidence hash and sealing chain of custody...', len(fused_candidates), valid_cnt)
 
         # Step 9: Post-operation Evidence Hash Verification (Read-Only Check)
         evidence_hash_after = StreamingImageReader.calculate_sha256(image_path)

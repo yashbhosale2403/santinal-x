@@ -1,7 +1,11 @@
 import os
 import hashlib
+import time
+import threading
 from django.shortcuts import render, get_object_or_404, redirect
+from django.http import JsonResponse
 from django.contrib import messages
+from django.db import close_old_connections
 from apps.forensic.models import Case, EvidenceSource
 from apps.devices.models import StorageDevice
 from workers.device_worker.detector import DeviceDetector
@@ -12,6 +16,199 @@ from apps.reports.generator import ReportGenerator
 from apps.reports.models import Report
 from apps.ledger.adapters import LocalImmutableLedger
 from apps.ledger.models import LedgerEntry
+
+def run_recovery_worker(op_id_str: str, is_async: bool = False):
+    """
+    Executes forensic recovery either synchronously (for test suites)
+    or in a background thread with real-time stage progress reporting.
+    """
+    close_old_connections()
+    try:
+        op = RecoveryOperation.objects.get(operation_id=op_id_str)
+    except RecoveryOperation.DoesNotExist:
+        return
+
+    case = op.case
+    evidence = op.evidence_source
+    recovery_mode = op.recovery_mode
+    ext_list = op.selected_types
+    options = {
+        'validation': True,
+        'fragmentation': True,
+        'deduplicate': True
+    }
+
+    base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    out_dir = os.path.join(base_dir, 'media', 'carved_artifacts', str(op.operation_id))
+
+    def progress_callback(pct, phase_name, message='', candidates_count=0, valid_count=0):
+        try:
+            close_old_connections()
+            op.progress_percent = pct
+            op.current_phase = message or phase_name
+            if candidates_count:
+                op.candidates_found = candidates_count
+            if valid_count:
+                op.valid_files_count = valid_count
+            op.save(update_fields=['progress_percent', 'current_phase', 'candidates_found', 'valid_files_count'])
+            if is_async:
+                time.sleep(0.35)
+        except Exception:
+            pass
+
+    try:
+        op.status = 'SCANNING'
+        op.progress_percent = 5
+        op.current_phase = 'Initializing Read-Only USB / Evidence Recovery'
+        op.save(update_fields=['status', 'progress_percent', 'current_phase'])
+        if is_async:
+            time.sleep(0.3)
+
+        image_file = evidence.file_path if os.path.exists(evidence.file_path) else os.path.join(base_dir, 'demo_data', 'test_drive.img')
+
+        carved_list, summary = RecoveryEngine.run(
+            image_path=image_file,
+            recovery_mode=recovery_mode,
+            target_extensions=ext_list,
+            options=options,
+            output_dir=out_dir,
+            progress_callback=progress_callback
+        )
+
+        close_old_connections()
+        # Store RecoveredFile objects in DB
+        rec_file_objs = []
+        for item in carved_list:
+            rel_out_path = f"/media/carved_artifacts/{op.operation_id}/{item['filename']}"
+            rf = RecoveredFile.objects.create(
+                operation=op,
+                case=case,
+                evidence_source=evidence,
+                filename=item['filename'],
+                original_filename=item.get('original_filename', ''),
+                original_path=item.get('original_path', ''),
+                detected_type=item['detected_type'],
+                mime_type=item.get('mime_type', 'application/octet-stream'),
+                size_bytes=item.get('size_bytes', 0),
+                byte_offset=item.get('byte_offset', 0),
+                sector_number=item.get('sector_number', 0),
+                sector_offset=item.get('byte_offset', 0),
+                confidence_score=item.get('confidence_score', 50),
+                carving_method=item.get('carving_method', 'HEADER_FOOTER_MATCH'),
+                recovery_source=item.get('recovery_source', 'Signature Carving'),
+                deleted_status=item.get('deleted_status', True),
+                validation_status=item.get('validation_status', 'UNKNOWN'),
+                validation_details=item.get('validation_details', ''),
+                fragment_count=item.get('fragment_count', 1),
+                fragments_missing=item.get('fragments_missing', 0),
+                reconstruction_status=item.get('reconstruction_status', 'SUCCESS'),
+                sha256_hash=item.get('sha256_hash', ''),
+                output_path=rel_out_path,
+                classification=item.get('classification', 'OTHER')
+            )
+            rec_file_objs.append(rf)
+
+        # Generate Forensic Recovery PDF Report
+        report_pdf_path = os.path.join(base_dir, 'media', 'reports', f"forensic_report_{op.operation_id}.pdf")
+        os.makedirs(os.path.dirname(report_pdf_path), exist_ok=True)
+        report_hash = ReportGenerator.generate_forensic_recovery_report({
+            'case_number': case.case_number,
+            'evidence_name': evidence.name,
+            'evidence_hash': summary['evidence_sha256'],
+            'recovery_mode': recovery_mode,
+            'total_candidates': summary['total_candidates'],
+            'valid_count': summary['valid_count'],
+            'methods_attempted': summary.get('methods_attempted', []),
+            'methods_completed': summary.get('methods_completed', []),
+            'methods_skipped': summary.get('methods_skipped', []),
+            'recovered_files': [
+                {
+                    'filename': rf.display_name(),
+                    'detected_type': rf.detected_type,
+                    'size_bytes': rf.size_bytes,
+                    'recovery_source': rf.recovery_source,
+                    'validation_status': rf.validation_status,
+                    'confidence_score': rf.confidence_score,
+                    'sha256_hash': rf.sha256_hash
+                } for rf in rec_file_objs
+            ]
+        }, report_pdf_path)
+
+        report_obj = Report.objects.create(
+            report_type=Report.ReportType.FORENSIC_RECOVERY_REPORT,
+            title=f"Forensic Recovery Report - {case.case_number}",
+            case=case,
+            generated_by=op.requested_by,
+            file_path=f"/media/reports/forensic_report_{op.operation_id}.pdf",
+            report_hash=report_hash,
+            format=Report.Format.PDF
+        )
+
+        # Audit Completion Event
+        audit_event = AuditLogger.log_event(
+            event_type='RECOVERY_COMPLETED',
+            user=op.requested_by,
+            case=case,
+            operation_id=str(op.operation_id),
+            details={
+                'candidates': summary['total_candidates'],
+                'valid': summary['valid_count'],
+                'report_hash': report_hash
+            }
+        )
+
+        # Record Immutable Ledger Entry
+        ledger_adapter = LocalImmutableLedger()
+        ledger_res = ledger_adapter.record_hash(
+            event_hash=audit_event.event_hash if audit_event else summary['evidence_sha256'],
+            operation_id=str(op.operation_id),
+            report_hash=report_hash
+        )
+
+        op.status = 'COMPLETED'
+        op.current_phase = 'Completed'
+        op.progress_percent = 100
+        op.total_scanned_bytes = summary['scanned_bytes']
+        op.candidates_found = summary['total_candidates']
+        op.valid_files_count = summary['valid_count']
+        op.operation_hash = summary['evidence_sha256']
+        op.methods_attempted = summary.get('methods_attempted', [])
+        op.methods_completed = summary.get('methods_completed', [])
+        op.methods_skipped = summary.get('methods_skipped', [])
+        op.save()
+
+    except Exception as e:
+        close_old_connections()
+        op.status = 'FAILED'
+        op.failure_details = str(e)
+        op.save(update_fields=['status', 'failure_details'])
+        AuditLogger.log_event(
+            event_type='RECOVERY_FAILED',
+            user=op.requested_by,
+            case=case,
+            operation_id=str(op.operation_id),
+            details={'error': str(e)}
+        )
+
+def recovery_status_api(request, operation_id):
+    """
+    JSON API endpoint for polling real-time recovery progress, current phase,
+    candidate artifacts count, and completion state.
+    """
+    op = get_object_or_404(RecoveryOperation, operation_id=operation_id)
+    return JsonResponse({
+        'operation_id': str(op.operation_id),
+        'status': op.status,
+        'progress': op.progress_percent,
+        'current_stage': op.current_phase,
+        'status_message': op.current_phase,
+        'candidates_found': op.candidates_found,
+        'valid_files_count': op.valid_files_count,
+        'is_completed': op.status == 'COMPLETED',
+        'is_failed': op.status == 'FAILED',
+        'error_message': op.failure_details or '',
+        'result_url': f"/recovery/results/{op.operation_id}/"
+    })
 
 def recovery_scanner(request):
     # Trigger USB / Device Discovery scan if requested or if no devices exist
@@ -102,12 +299,6 @@ def recovery_scanner(request):
 
         ext_list = sorted(list(exts))
 
-        options = {
-            'validation': request.POST.get('opt_validation', 'on') == 'on',
-            'fragmentation': request.POST.get('opt_fragmentation', 'on') == 'on',
-            'deduplicate': request.POST.get('opt_dedup', 'on') == 'on'
-        }
-
         # Resolve Evidence Source (from dropdown OR selected USB device)
         evidence = None
         if evidence_id:
@@ -160,6 +351,7 @@ def recovery_scanner(request):
             recovery_mode=recovery_mode,
             selected_types=ext_list,
             status='SCANNING',
+            progress_percent=0,
             current_phase='Initializing Read-Only USB / Evidence Recovery'
         )
 
@@ -171,140 +363,30 @@ def recovery_scanner(request):
             details={'evidence': evidence.name, 'mode': recovery_mode, 'types': ext_list}
         )
 
-        # Output directory for recovered artifacts
-        base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        out_dir = os.path.join(base_dir, 'media', 'carved_artifacts', str(op.operation_id))
+        is_ajax = request.headers.get('x-requested-with') == 'XMLHttpRequest' or request.POST.get('ajax') == '1'
 
-        # Perform Read-Only Multi-Method Forensic Recovery
-        try:
-            carved_list, summary = RecoveryEngine.run(
-                image_path=evidence.file_path if os.path.exists(evidence.file_path) else os.path.join(base_dir, 'demo_data', 'test_drive.img'),
-                recovery_mode=recovery_mode,
-                target_extensions=ext_list,
-                options=options,
-                output_dir=out_dir
+        if is_ajax:
+            # Asynchronous execution in background thread for live UI progress polling
+            thread = threading.Thread(
+                target=run_recovery_worker,
+                args=(str(op.operation_id), True),
+                daemon=True
             )
-
-            # Store RecoveredFile objects in DB
-            rec_file_objs = []
-            for item in carved_list:
-                rel_out_path = f"/media/carved_artifacts/{op.operation_id}/{item['filename']}"
-                rf = RecoveredFile.objects.create(
-                    operation=op,
-                    case=case,
-                    evidence_source=evidence,
-                    filename=item['filename'],
-                    original_filename=item.get('original_filename', ''),
-                    original_path=item.get('original_path', ''),
-                    detected_type=item['detected_type'],
-                    mime_type=item.get('mime_type', 'application/octet-stream'),
-                    size_bytes=item.get('size_bytes', 0),
-                    byte_offset=item.get('byte_offset', 0),
-                    sector_number=item.get('sector_number', 0),
-                    sector_offset=item.get('byte_offset', 0),
-                    confidence_score=item.get('confidence_score', 50),
-                    carving_method=item.get('carving_method', 'HEADER_FOOTER_MATCH'),
-                    recovery_source=item.get('recovery_source', 'Signature Carving'),
-                    deleted_status=item.get('deleted_status', True),
-                    validation_status=item.get('validation_status', 'UNKNOWN'),
-                    validation_details=item.get('validation_details', ''),
-                    fragment_count=item.get('fragment_count', 1),
-                    fragments_missing=item.get('fragments_missing', 0),
-                    reconstruction_status=item.get('reconstruction_status', 'SUCCESS'),
-                    sha256_hash=item.get('sha256_hash', ''),
-                    output_path=rel_out_path,
-                    classification=item.get('classification', 'OTHER')
+            thread.start()
+            return JsonResponse({'status': 'SUCCESS', 'operation_id': str(op.operation_id)})
+        else:
+            # Synchronous execution for non-AJAX or test clients
+            run_recovery_worker(str(op.operation_id), is_async=False)
+            op.refresh_from_db()
+            if op.status == 'COMPLETED':
+                messages.success(
+                    request,
+                    f"USB / Forensic Recovery Completed! Recovered {op.candidates_found} files ({op.valid_files_count} valid)."
                 )
-                rec_file_objs.append(rf)
-
-            op.status = 'COMPLETED'
-            op.current_phase = 'Completed'
-            op.progress_percent = 100
-            op.total_scanned_bytes = summary['scanned_bytes']
-            op.candidates_found = summary['total_candidates']
-            op.valid_files_count = summary['valid_count']
-            op.operation_hash = summary['evidence_sha256']
-            op.methods_attempted = summary.get('methods_attempted', [])
-            op.methods_completed = summary.get('methods_completed', [])
-            op.methods_skipped = summary.get('methods_skipped', [])
-            op.save()
-
-            # Generate Forensic Recovery PDF Report
-            report_pdf_path = os.path.join(base_dir, 'media', 'reports', f"forensic_report_{op.operation_id}.pdf")
-            report_hash = ReportGenerator.generate_forensic_recovery_report({
-                'case_number': case.case_number,
-                'evidence_name': evidence.name,
-                'evidence_hash': summary['evidence_sha256'],
-                'recovery_mode': recovery_mode,
-                'total_candidates': summary['total_candidates'],
-                'valid_count': summary['valid_count'],
-                'methods_attempted': summary.get('methods_attempted', []),
-                'methods_completed': summary.get('methods_completed', []),
-                'methods_skipped': summary.get('methods_skipped', []),
-                'recovered_files': [
-                    {
-                        'filename': rf.display_name(),
-                        'detected_type': rf.detected_type,
-                        'size_bytes': rf.size_bytes,
-                        'recovery_source': rf.recovery_source,
-                        'validation_status': rf.validation_status,
-                        'confidence_score': rf.confidence_score,
-                        'sha256_hash': rf.sha256_hash
-                    } for rf in rec_file_objs
-                ]
-            }, report_pdf_path)
-
-            report_obj = Report.objects.create(
-                report_type=Report.ReportType.FORENSIC_RECOVERY_REPORT,
-                title=f"Forensic Recovery Report - {case.case_number}",
-                case=case,
-                generated_by=request.user if request.user.is_authenticated else None,
-                file_path=f"/media/reports/forensic_report_{op.operation_id}.pdf",
-                report_hash=report_hash,
-                format=Report.Format.PDF
-            )
-
-            # Audit Completion Event
-            audit_event = AuditLogger.log_event(
-                event_type='RECOVERY_COMPLETED',
-                user=request.user if request.user.is_authenticated else None,
-                case=case,
-                operation_id=str(op.operation_id),
-                details={
-                    'candidates': summary['total_candidates'],
-                    'valid': summary['valid_count'],
-                    'report_hash': report_hash
-                }
-            )
-
-            # Record Immutable Ledger Entry
-            ledger_adapter = LocalImmutableLedger()
-            ledger_res = ledger_adapter.record_hash(
-                event_hash=audit_event.event_hash if audit_event else op.operation_hash,
-                operation_id=str(op.operation_id),
-                report_hash=report_hash
-            )
-
-            messages.success(
-                request,
-                f"USB / Forensic Recovery Completed! Recovered {summary['total_candidates']} files ({summary['valid_count']} valid). "
-                f"Ledger Tx ID: {ledger_res.get('transaction_id', '')[:16]}..."
-            )
-            return redirect(f"/recovery/results/{op.operation_id}/")
-
-        except Exception as e:
-            op.status = 'FAILED'
-            op.failure_details = str(e)
-            op.save()
-            AuditLogger.log_event(
-                event_type='RECOVERY_FAILED',
-                user=request.user if request.user.is_authenticated else None,
-                case=case,
-                operation_id=str(op.operation_id),
-                details={'error': str(e)}
-            )
-            messages.error(request, f"Forensic recovery failed: {e}")
-            return redirect('/recovery/')
+                return redirect(f"/recovery/results/{op.operation_id}/")
+            else:
+                messages.error(request, f"Forensic recovery failed: {op.failure_details}")
+                return redirect('/recovery/')
 
     recent_recoveries = RecoveryOperation.objects.order_by('-started_at')[:5]
 

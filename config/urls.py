@@ -8,7 +8,7 @@ from apps.authentication.views import login_view, logout_view, signup_view
 from apps.devices.views import device_list, device_detail
 from apps.sanitization.views import sanitization_wizard, sanitization_result, sanitization_status_api, sanitization_cancel_api
 from apps.file_erasure.views import file_erasure_view, file_erasure_result
-from apps.recovery.views import recovery_scanner, recovery_results, assign_case_post_recovery
+from apps.recovery.views import recovery_scanner, recovery_results, assign_case_post_recovery, recovery_status_api
 from apps.forensic.views import cases_index
 from apps.audit.views import audit_trail_view, verify_integrity, trigger_tamper_demo, reset_audit_chain
 from apps.ledger.views import ledger_view
@@ -44,6 +44,7 @@ urlpatterns = [
     # Forensic Carving & Recovery
     path('recovery/', recovery_scanner, name='recovery_scanner'),
     path('recovery/results/<uuid:operation_id>/', recovery_results, name='recovery_results'),
+    path('recovery/api/status/<uuid:operation_id>/', recovery_status_api, name='recovery_status_api'),
     path('recovery/assign-case/<uuid:operation_id>/', assign_case_post_recovery, name='assign_case_post_recovery'),
 
     # Cases & Evidence
