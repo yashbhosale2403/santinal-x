@@ -39,19 +39,28 @@
 
     <!-- Step 1: Device Selection -->
     <div class="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-card space-y-4">
-        <h2 class="text-sm font-bold text-slate-900">STEP 1: Select Target Storage Device</h2>
+        <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h2 class="text-sm font-bold text-slate-900">STEP 1: Select Target Storage Device</h2>
+            <a href="/sanitization/?rescan=1" class="px-3 py-1 bg-teal-50 hover:bg-teal-100 text-teal-700 border border-teal-200/80 rounded-lg text-[11px] font-bold transition flex items-center space-x-1">
+                <i class="fa-solid fa-arrows-rotate text-xs"></i>
+                <span>Scan for Connected Drives</span>
+            </a>
+        </div>
         
-        <form method="GET" action="/sanitization/" class="flex items-center gap-3">
-            <select name="device_id" onchange="this.form.submit()" class="flex-1 bg-slate-50 border border-slate-200/80 text-slate-900 text-xs rounded-xl p-3 focus:outline-none focus:border-teal-500 font-sans font-medium">
+        <form id="device-select-form" method="GET" action="/sanitization/" class="flex items-center gap-3">
+            <select id="device-select" name="device_id" onchange="this.form.submit()" class="flex-1 bg-slate-50 border border-slate-200/80 text-slate-900 text-xs rounded-xl p-3 focus:outline-none focus:border-teal-500 font-sans font-medium">
+                {% if not selected_device %}
                 <option value="">-- Choose Storage Device to Sanitize --</option>
+                {% endif %}
                 {% for d in devices %}
                 <option value="{{ d.device_id }}" {% if selected_device and selected_device.device_id == d.device_id %}selected{% endif %}>
-                    {{ d.name }} [{{ d.get_media_type_display }} - {{ d.formatted_capacity }}] ({{ d.device_id }})
+                    🔌 {{ d.name }} [{{ d.get_media_type_display }} - {{ d.formatted_capacity }}] ({{ d.device_id }})
                 </option>
                 {% endfor %}
             </select>
-            <button type="submit" class="px-4 py-3 bg-slate-100 hover:bg-slate-200/80 text-xs font-semibold text-slate-700 rounded-xl transition">
-                Load Policy
+            <button type="submit" id="load-policy-btn" class="px-5 py-3 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center space-x-2 shrink-0">
+                <i class="fa-solid fa-shield-halved text-xs"></i>
+                <span>Load Policy</span>
             </button>
         </form>
     </div>
@@ -457,5 +466,22 @@
         })
         .catch(err => alert("Cancel failed: " + err));
     }
+
+    document.addEventListener("DOMContentLoaded", () => {
+        const devForm = document.getElementById("device-select-form");
+        const devSelect = document.getElementById("device-select");
+        if (devForm && devSelect) {
+            devForm.addEventListener("submit", (e) => {
+                if (!devSelect.value) {
+                    for (let i = 0; i < devSelect.options.length; i++) {
+                        if (devSelect.options[i].value) {
+                            devSelect.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+            });
+        }
+    });
 </script>
 {% endblock %}

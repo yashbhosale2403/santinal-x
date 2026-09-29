@@ -18,4 +18,4 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(f'STARTING SENTINEL-X on http://{host}:{port} (login: admin / admin123)')
         )
-        call_command('runserver', f'{host}:{port}', use_reloader=False)
+        call_command('runserver', f'{host}:{port}')

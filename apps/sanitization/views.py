@@ -7,28 +7,45 @@ from apps.devices.models import StorageDevice
 from apps.sanitization.models import SanitizationOperation
 from workers.sanitization_worker.policy import SanitizationPolicyEngine
 from workers.sanitization_worker.sanitizer import DriveSanitizer
+from workers.device_worker.detector import DeviceDetector
 from apps.audit.utils import AuditLogger
 
 def sanitization_wizard(request):
+    # Rescan or auto-detect if no devices exist
+    if request.GET.get('rescan') == '1' or StorageDevice.objects.count() == 0:
+        detected = DeviceDetector.detect_all_devices()
+        for d in detected:
+            StorageDevice.objects.update_or_create(device_id=d['device_id'], defaults=d)
+        if request.GET.get('rescan') == '1':
+            messages.success(request, f"Device Discovery Engine synchronized: {len(detected)} storage device(s) active.")
+            return redirect('/sanitization/')
+
     selected_device_id = request.GET.get('device_id')
     active_op_id = request.GET.get('active_op_id')
     selected_device = None
     policy = None
     active_op = None
 
+    devices = StorageDevice.objects.all()
+
     if selected_device_id:
         selected_device = StorageDevice.objects.filter(device_id=selected_device_id).first()
-        if selected_device:
-            policy = SanitizationPolicyEngine.evaluate_policy(
-                media_type=selected_device.media_type,
-                interface_type=selected_device.interface_type,
-                capabilities=selected_device.detected_capabilities or {}
-            )
-            # Page refresh recovery check: look for active running operation on this device
-            active_op = SanitizationOperation.objects.filter(
-                device=selected_device,
-                status__in=['PENDING', 'INITIALIZING', 'DETECTING_DEVICE', 'CHECKING_CAPABILITIES', 'PREPARING', 'SANITIZING', 'VERIFYING']
-            ).order_by('-started_at').first()
+
+    # If no device was explicitly chosen or if device_id was empty, default to the first available device
+    if not selected_device and devices.exists():
+        selected_device = devices.first()
+
+    if selected_device:
+        policy = SanitizationPolicyEngine.evaluate_policy(
+            media_type=selected_device.media_type,
+            interface_type=selected_device.interface_type,
+            capabilities=selected_device.detected_capabilities or {}
+        )
+        # Page refresh recovery check: look for active running operation on this device
+        active_op = SanitizationOperation.objects.filter(
+            device=selected_device,
+            status__in=['PENDING', 'INITIALIZING', 'DETECTING_DEVICE', 'CHECKING_CAPABILITIES', 'PREPARING', 'SANITIZING', 'VERIFYING']
+        ).order_by('-started_at').first()
 
     if active_op_id and not active_op:
         active_op = SanitizationOperation.objects.filter(operation_id=active_op_id).first()
