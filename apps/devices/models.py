@@ -41,6 +41,28 @@ class StorageDevice(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    @property
+    def is_os_drive(self):
+        import os
+        import platform
+        sys_drive = os.environ.get('SystemDrive', 'C:').upper().rstrip('\\')
+
+        mp = (self.mount_point or '').strip().upper()
+        if mp:
+            if platform.system() == 'Windows':
+                if mp.startswith(sys_drive) or mp.startswith('C:'):
+                    return True
+            else:
+                if mp == '/' or mp.startswith('/BOOT') or mp.startswith('/ROOT'):
+                    return True
+
+        name_upper = (self.name or '').upper()
+        dev_id_upper = (self.device_id or '').upper()
+        if 'C:' in name_upper or 'C:\\' in name_upper or '_C_' in dev_id_upper or '[C:' in name_upper or '[C,' in name_upper:
+            return True
+
+        return False
+
     def formatted_capacity(self):
         gb = self.capacity_bytes / (1024 ** 3)
         if gb >= 1:

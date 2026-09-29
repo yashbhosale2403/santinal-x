@@ -44,7 +44,12 @@
                             {% endif %}
                             <span>{{ d.get_media_type_display }}</span>
                         </span>
-                        {% if d.removable %}
+                        {% if d.is_os_drive %}
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase bg-rose-50 text-rose-700 border border-rose-200/80 flex items-center space-x-1" title="Operating System Drive">
+                            <i class="fa-solid fa-triangle-exclamation text-[9px]"></i>
+                            <span>OS Drive</span>
+                        </span>
+                        {% elif d.removable %}
                         <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase bg-amber-50 text-amber-700 border border-amber-200/80 flex items-center space-x-1" title="Removable external media">
                             <i class="fa-solid fa-arrow-right-from-bracket text-[9px]"></i>
                             <span>Removable</span>
@@ -113,10 +118,16 @@
                 <a href="/devices/{{ d.device_id }}/" class="flex-1 text-center py-2 bg-slate-100 hover:bg-slate-200/80 font-semibold text-slate-700 rounded-xl transition">
                     View Details
                 </a>
-                <a href="/sanitization/?device_id={{ d.device_id }}" class="flex-1 text-center py-2 border border-rose-300 bg-rose-50/50 hover:bg-rose-600 hover:text-white hover:border-rose-600 text-rose-700 font-semibold rounded-xl transition flex items-center justify-center space-x-1.5 shadow-2xs">
+                {% if d.is_os_drive %}
+                <a href="/sanitization/?device_id={{ d.device_id }}" class="flex-1 text-center py-2 border border-rose-300 bg-rose-50/50 hover:bg-rose-600 hover:text-white hover:border-rose-600 text-rose-700 font-semibold rounded-xl transition flex items-center justify-center space-x-1.5 shadow-2xs" title="Caution: Operating System Drive">
                     <i class="fa-solid fa-triangle-exclamation text-[10px]"></i>
                     <span>Sanitize Drive</span>
                 </a>
+                {% else %}
+                <a href="/sanitization/?device_id={{ d.device_id }}" class="flex-1 text-center py-2 bg-teal-600 hover:bg-teal-700 font-semibold text-white rounded-xl transition shadow-xs">
+                    Sanitize Drive
+                </a>
+                {% endif %}
             </div>
 
         </div>
