@@ -113,8 +113,9 @@
                 <a href="/devices/{{ d.device_id }}/" class="flex-1 text-center py-2 bg-slate-100 hover:bg-slate-200/80 font-semibold text-slate-700 rounded-xl transition">
                     View Details
                 </a>
-                <a href="/sanitization/?device_id={{ d.device_id }}" class="flex-1 text-center py-2 bg-teal-600 hover:bg-teal-700 font-semibold text-white rounded-xl transition shadow-xs">
-                    Sanitize Drive
+                <a href="/sanitization/?device_id={{ d.device_id }}" class="flex-1 text-center py-2 border border-rose-300 bg-rose-50/50 hover:bg-rose-600 hover:text-white hover:border-rose-600 text-rose-700 font-semibold rounded-xl transition flex items-center justify-center space-x-1.5 shadow-2xs">
+                    <i class="fa-solid fa-triangle-exclamation text-[10px]"></i>
+                    <span>Sanitize Drive</span>
                 </a>
             </div>
 
