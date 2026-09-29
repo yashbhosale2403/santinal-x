@@ -1,6 +1,6 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-[#F8F9FA] text-slate-800">
+<html lang="en" class="min-h-full bg-[#F8F9FA] text-slate-800">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -50,9 +50,24 @@
         .shadow-purity { box-shadow: 0px 3.5px 5.5px rgba(0, 0, 0, 0.02); }
         .shadow-purity-card { box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.05); }
         .shadow-purity-teal { box-shadow: 0px 4px 12px rgba(79, 209, 197, 0.4); }
+
+        /* Slim sleek scrollbars */
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 4px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
     </style>
 </head>
-<body class="h-full font-sans antialiased bg-[#F8F9FA] text-slate-800 flex flex-col" x-data="{ cmdPaletteOpen: false }" @keydown.window.cmd.k="cmdPaletteOpen = true" @keydown.window.ctrl.k="cmdPaletteOpen = true">
+<body class="min-h-screen font-sans antialiased bg-[#F8F9FA] text-slate-800 flex flex-col" x-data="{ cmdPaletteOpen: false }" @keydown.window.cmd.k="cmdPaletteOpen = true" @keydown.window.ctrl.k="cmdPaletteOpen = true">
 
     <!-- Purity UI Top Header -->
     <header class="bg-transparent pt-4 px-4 sm:px-6 lg:px-8 max-w-7xl w-full mx-auto">
@@ -126,13 +141,13 @@
     </header>
 
     <!-- Main Container -->
-    <div class="flex-1 flex overflow-hidden max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 gap-6">
+    <div class="flex-1 flex max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-16 gap-6 items-start">
 
         {% if request.path != '/landing/' %}
         <!-- Purity UI Floating Sidebar Navigation -->
-        <aside class="w-64 flex flex-col shrink-0 space-y-6">
+        <aside class="w-64 flex flex-col shrink-0">
 
-            <div class="bg-white rounded-2xl shadow-purity-card border border-slate-100 p-5 space-y-6 flex-1 flex flex-col justify-between">
+            <div class="bg-white rounded-2xl shadow-purity-card border border-slate-100 p-5 space-y-6 flex flex-col justify-between sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto scrollbar-thin">
                 
                 <div class="space-y-6">
                     <!-- SENTINEL-X Brand Logo Header -->
@@ -258,8 +273,7 @@
         {% endif %}
 
         <!-- Main Content Area -->
-
-        <main class="flex-1 overflow-y-auto min-w-0">
+        <main class="flex-1 min-w-0 pb-12">
             {% if messages %}
             <div class="mb-4 space-y-2">
                 {% for message in messages %}
@@ -274,6 +288,22 @@
             {% endif %}
 
             {% block content %}{% endblock %}
+
+            <!-- Sleek Footer with Generous Breathing Room -->
+            <footer class="mt-12 pt-6 pb-2 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400 font-semibold">
+                <div class="flex items-center space-x-2">
+                    <span class="w-2 h-2 rounded-full bg-[#4FD1C5]"></span>
+                    <span class="text-slate-700 font-bold">SENTINEL-X</span>
+                    <span>&copy; 2026 Integrated Forensics & Sanitization</span>
+                </div>
+                <div class="flex items-center space-x-4 text-[11px]">
+                    <span class="text-teal-600 font-bold">NIST SP 800-88 Rev. 2</span>
+                    <span>·</span>
+                    <span>Tamper-Evident Ledger</span>
+                    <span>·</span>
+                    <a href="/documentation/" class="hover:text-teal-600 transition">Docs</a>
+                </div>
+            </footer>
         </main>
     </div>
 
