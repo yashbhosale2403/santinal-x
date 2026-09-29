@@ -16,6 +16,8 @@ class DeviceDetector:
         seen_serials = set()
         seen_mounts = set()
 
+        drive_letter_to_parent = {}
+
         # 1. Windows WMI Detection (Primary for Windows Physical & USB Drives)
         if platform.system() == 'Windows':
             try:
@@ -27,7 +29,7 @@ class DeviceDetector:
                     model = (disk.Model or "Physical Storage Drive").strip()
                     caption = (disk.Caption or model).strip()
                     interface = disk.InterfaceType or "SATA"
-                    if "NVMe" in model.upper() or "NVME" in model.upper() or "SN7" in model.upper():
+                    if "NVMe" in model.upper() or "NVME" in model.upper() or "SN7" in model.upper() or "PC SN" in model.upper() or "PCIE" in model.upper():
                         interface = "NVME"
                         media_type = "NVME_SSD"
                     elif interface.upper() == "USB" or "USB" in model.upper() or disk.MediaType == "Removable Media":
@@ -42,15 +44,22 @@ class DeviceDetector:
                     serial = (disk.SerialNumber or f"SN-PHYS-{idx+1:04d}").strip()
                     mount_point = disk.DeviceID or f"\\\\.\\PhysicalDrive{idx}"
 
-                    # Try to map drive letters (e.g. E:, F:) attached to this physical disk
+                    # Try to map drive letters (e.g. C:, P:, V:) attached to this physical disk
                     drive_letters = []
                     try:
                         for partition in disk.associators("Win32_DiskDriveToDiskPartition"):
                             for logical_disk in partition.associators("Win32_LogicalDiskToPartition"):
                                 if logical_disk.DeviceID:
-                                    dl = logical_disk.DeviceID.strip()
+                                    dl = logical_disk.DeviceID.strip().upper().rstrip('\\')
                                     drive_letters.append(dl)
-                                    seen_mounts.add(dl.upper().rstrip('\\'))
+                                    seen_mounts.add(dl)
+                                    drive_letter_to_parent[dl] = {
+                                        'interface_type': interface,
+                                        'media_type': media_type,
+                                        'model': model,
+                                        'parent_name': caption,
+                                        'physical_device_id': mount_point
+                                    }
                     except Exception:
                         pass
 
@@ -95,34 +104,45 @@ class DeviceDetector:
                 is_removable = 'removable' in opts or 'cdrom' in opts or 'usb' in opts
                 serial_fallback = f"SN-PART-{hash(p.device) % 100000:05d}"
 
-                # Skip if already detected as a physical disk or mapped volume
-                p_dev = p.device.replace('\\', '').strip().upper()
-                p_mount = mount.replace('\\', '').strip().upper()
-                if p_dev in seen_mounts or p_mount in seen_mounts:
-                    continue
+                p_clean = p.device.strip().upper().rstrip('\\')
+                parent_info = drive_letter_to_parent.get(p_clean) or drive_letter_to_parent.get(mount.strip().upper().rstrip('\\'))
 
-                if any(m in p.device for m in seen_serials):
-                    continue
-
-                if 'usb' in mount.lower() or is_removable or 'usb' in p.device.lower():
+                if parent_info:
+                    interface = parent_info['interface_type']
+                    media_type = parent_info['media_type']
+                    model_desc = f"NVMe Storage Volume ({fstype})" if media_type == 'NVME_SSD' else f"Storage Volume ({fstype})"
+                elif 'usb' in mount.lower() or is_removable or 'usb' in p.device.lower():
                     interface = 'USB'
                     media_type = 'USB_FLASH'
+                    model_desc = f"Storage Volume ({fstype})"
                 elif 'nvme' in p.device.lower():
                     interface = 'NVME'
                     media_type = 'NVME_SSD'
+                    model_desc = f"NVMe Storage Volume ({fstype})"
                 elif 'ssd' in p.device.lower():
                     interface = 'SATA'
                     media_type = 'SATA_SSD'
+                    model_desc = f"SSD Storage Volume ({fstype})"
                 else:
-                    interface = 'SATA'
-                    media_type = 'HDD'
+                    matched = False
+                    for parent_letter, p_info in drive_letter_to_parent.items():
+                        if parent_letter in p_clean:
+                            interface = p_info['interface_type']
+                            media_type = p_info['media_type']
+                            model_desc = f"NVMe Storage Volume ({fstype})" if media_type == 'NVME_SSD' else f"Storage Volume ({fstype})"
+                            matched = True
+                            break
+                    if not matched:
+                        interface = 'SATA'
+                        media_type = 'HDD'
+                        model_desc = f"Storage Volume ({fstype})"
 
                 device_id = f"DEV_VOL_{idx+1}_{p.device.replace(':', '').replace('/', '_').replace('\\', '_')}"
                 
                 devices.append({
                     'device_id': device_id,
                     'name': f"Logical Volume ({p.device})",
-                    'model': f"Storage Volume ({fstype})",
+                    'model': model_desc,
                     'manufacturer': "System Storage Controller",
                     'serial_number': serial_fallback,
                     'capacity_bytes': total_bytes,
