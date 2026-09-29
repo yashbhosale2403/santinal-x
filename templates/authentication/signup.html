@@ -148,12 +148,18 @@
 
                 <!-- Role Selection -->
                 <div>
-                    <label class="block text-slate-700 font-bold mb-1">Role <span class="text-rose-400">*</span></label>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-slate-700 font-bold">Role <span class="text-rose-400">*</span></label>
+                        <span class="text-[10px] font-extrabold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200/60">
+                            <i class="fa-solid fa-shield-halved mr-1"></i>Admin Privileges Granted
+                        </span>
+                    </div>
                     <select name="role" class="w-full bg-slate-50 border border-slate-200 text-slate-800 p-3 rounded-2xl outline-none font-semibold transition-all duration-200 appearance-none cursor-pointer" required>
                         {% for value, label in roles %}
-                        <option value="{{ value }}" {% if form_data.role == value %}selected{% endif %}>{{ label }}</option>
+                        <option value="{{ value }}" {% if form_data.role %}{% if form_data.role == value %}selected{% endif %}{% else %}{% if value == 'ADMIN' %}selected{% endif %}{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
+                    <p class="text-[10px] text-slate-400 mt-1">All new accounts automatically receive full Administrator & Staff access across all platform modules.</p>
                 </div>
 
                 <!-- Department & Badge ID Row -->

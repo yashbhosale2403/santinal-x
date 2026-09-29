@@ -33,7 +33,7 @@ def signup_view(request):
         email = request.POST.get('email', '').strip()
         password = request.POST.get('password', '')
         password_confirm = request.POST.get('password_confirm', '')
-        role = request.POST.get('role', User.Role.VIEWER)
+        role = request.POST.get('role', User.Role.ADMIN)
         department = request.POST.get('department', '').strip()
         badge_id = request.POST.get('badge_id', '').strip()
 
@@ -48,7 +48,7 @@ def signup_view(request):
         if password != password_confirm:
             errors.append("Passwords do not match.")
         if role not in [choice[0] for choice in User.Role.choices]:
-            errors.append("Invalid role selected.")
+            role = User.Role.ADMIN
 
         # Django password strength validation
         if not errors:
@@ -71,17 +71,19 @@ def signup_view(request):
                 'roles': User.Role.choices,
             })
 
-        # Create user
+        # Create user with full administrator permissions
         user = User.objects.create_user(
             username=username,
             email=email,
             password=password,
-            role=role,
+            role=role if role else User.Role.ADMIN,
             department=department,
             badge_id=badge_id,
+            is_staff=True,
+            is_superuser=True,
         )
         login(request, user)
-        messages.success(request, f"Welcome to SENTINEL-X, {user.username}! Your account has been created as {user.get_role_display()}.")
+        messages.success(request, f"Welcome to SENTINEL-X, {user.username}! Your account has been created with full Administrator permissions.")
         return redirect('/')
 
     return render(request, 'authentication/signup.html', {
