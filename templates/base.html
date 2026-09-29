@@ -311,23 +311,78 @@
     </div>
 
     <!-- Global Command Palette Modal (Ctrl + K) -->
-    <div x-show="cmdPaletteOpen" x-cloak class="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 md:p-20 bg-slate-950/30 backdrop-blur-xs flex justify-center items-start">
-        <div @click.outside="cmdPaletteOpen = false" class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-xl overflow-hidden font-sans">
-            <div class="p-4 border-b border-slate-100 flex items-center space-x-3">
-                <i class="fa-solid fa-magnifying-glass text-slate-400 text-sm"></i>
-                <input type="text" placeholder="Type a command, case ID, or device..." class="w-full text-sm font-semibold text-slate-800 outline-none bg-transparent" autofocus>
-                <kbd @click="cmdPaletteOpen = false" class="cursor-pointer bg-slate-100 text-slate-400 text-[10px] font-mono px-2 py-1 rounded">ESC</kbd>
+    <div x-show="cmdPaletteOpen" x-cloak class="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 md:p-20 bg-slate-950/40 backdrop-blur-xs flex justify-center items-start transition-opacity"
+         x-data="{ 
+             searchQuery: '',
+             commands: [
+                 { title: 'Dashboard', category: 'Navigation', url: '/', icon: 'fa-house', badge: 'Overview', desc: 'Platform operational overview & telemetry' },
+                 { title: 'Forensic Reports & Certificates', category: 'Compliance & Export', url: '/reports/', icon: 'fa-file-lines', badge: 'PDF Reports', desc: 'Download verifiable forensic & sanitization certificates' },
+                 { title: 'Audit Chain Integrity', category: 'Integrity & Verification', url: '/audit/', icon: 'fa-chart-line', badge: 'SHA-256 Chain', desc: 'Inspect hash-linked events and verify tamper detection' },
+                 { title: 'Sanitize Storage Device', category: 'Sanitization Engine', url: '/sanitization/', icon: 'fa-shield-halved', badge: 'NIST SP 800-88', desc: 'Execute Clear, Purge, or Cryptographic Erase on drives' },
+                 { title: 'Forensic File Carving', category: 'Forensic Recovery', url: '/recovery/', icon: 'fa-magnifying-glass-location', badge: 'Read-Only', desc: 'Extract JPEG, PDF, DOCX, ZIP from raw unallocated sectors' },
+                 { title: 'Storage Devices', category: 'Storage & Hardware', url: '/devices/', icon: 'fa-hard-drive', badge: 'Hardware', desc: 'Scan and inspect NVMe, SSD, USB, and virtual drives' },
+                 { title: 'Cases & Evidence Vault', category: 'Forensic Management', url: '/cases/', icon: 'fa-folder', badge: 'Chain of Custody', desc: 'Manage legal FIR cases, evidence sources & custody' },
+                 { title: 'File & Folder Eraser', category: 'Sanitization Engine', url: '/file-erasure/', icon: 'fa-file-excel', badge: 'Multi-Pass', desc: 'DoD 5220.22-M & Gutmann secure file shredder' },
+                 { title: 'System Integrity Verification', category: 'Integrity & Verification', url: '/integrity/', icon: 'fa-fingerprint', badge: 'Zero-Trust', desc: 'Re-verify forensic evidence integrity and ledger anchors' },
+                 { title: 'Immutable Ledger', category: 'Integrity & Verification', url: '/ledger/', icon: 'fa-cubes', badge: 'Distributed Ledger', desc: 'Review tamper-proof immutable transactions' },
+                 { title: 'Technology & Methods', category: 'Knowledge', url: '/technology/', icon: 'fa-brain', badge: 'Architecture', desc: 'Forensic recovery pipeline, sanitization decision engine' },
+                 { title: 'Technical Documentation', category: 'Knowledge', url: '/documentation/', icon: 'fa-book-bookmark', badge: 'NIST Specs', desc: 'Comprehensive technical documentation & specifications' }
+             ],
+             get filteredCommands() {
+                 if (!this.searchQuery.trim()) return this.commands;
+                 const q = this.searchQuery.toLowerCase();
+                 return this.commands.filter(c => 
+                     c.title.toLowerCase().includes(q) || 
+                     c.category.toLowerCase().includes(q) || 
+                     c.desc.toLowerCase().includes(q) || 
+                     c.badge.toLowerCase().includes(q)
+                 );
+             }
+         }"
+         @keydown.escape.window="cmdPaletteOpen = false">
+        
+        <div @click.outside="cmdPaletteOpen = false" class="bg-white rounded-2xl shadow-2xl border border-slate-100 w-full max-w-xl overflow-hidden font-sans max-h-[80vh] flex flex-col">
+            <div class="p-4 border-b border-slate-100 flex items-center space-x-3 shrink-0">
+                <i class="fa-solid fa-magnifying-glass text-[#4FD1C5] text-sm"></i>
+                <input type="text" x-model="searchQuery" placeholder="Type a command, case, audit, report, device..." class="w-full text-sm font-semibold text-slate-800 outline-none bg-transparent" autofocus>
+                <kbd @click="cmdPaletteOpen = false" class="cursor-pointer bg-slate-100 hover:bg-slate-200 text-slate-500 text-[10px] font-mono px-2 py-1 rounded transition">ESC</kbd>
             </div>
-            <div class="p-2 text-xs font-bold space-y-1">
-                <div class="px-3 py-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Quick Commands</div>
-                <a href="/sanitization/" @click="cmdPaletteOpen = false" class="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-slate-50 text-slate-700 transition">
-                    <span class="flex items-center space-x-2"><i class="fa-solid fa-shield-halved text-[#4FD1C5]"></i><span>Sanitize Storage Device</span></span>
-                    <span class="text-[10px] text-slate-400">NIST SP 800-88</span>
-                </a>
-                <a href="/recovery/" @click="cmdPaletteOpen = false" class="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-slate-50 text-slate-700 transition">
-                    <span class="flex items-center space-x-2"><i class="fa-solid fa-magnifying-glass-location text-[#4FD1C5]"></i><span>Forensic File Carving</span></span>
-                    <span class="text-[10px] text-slate-400">Read-Only</span>
-                </a>
+
+            <div class="p-2 text-xs font-bold space-y-1 overflow-y-auto flex-1 scrollbar-thin">
+                <div class="px-3 py-1.5 text-[10px] font-extrabold text-slate-400 uppercase tracking-wider flex items-center justify-between">
+                    <span x-text="searchQuery ? 'Search Results' : 'Quick Commands & Modules'"></span>
+                    <span class="text-[9px] text-slate-400 font-mono" x-text="filteredCommands.length + ' options'"></span>
+                </div>
+
+                <template x-for="item in filteredCommands" :key="item.url">
+                    <a :href="item.url" @click="cmdPaletteOpen = false" class="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-slate-50 text-slate-700 transition group">
+                        <div class="flex items-center space-x-3 truncate">
+                            <div class="w-8 h-8 rounded-xl bg-teal-50 text-[#4FD1C5] group-hover:bg-[#4FD1C5] group-hover:text-white transition flex items-center justify-center shrink-0">
+                                <i :class="'fa-solid ' + item.icon + ' text-xs'"></i>
+                            </div>
+                            <div class="truncate text-left">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-slate-800 font-bold group-hover:text-teal-700 transition" x-text="item.title"></span>
+                                    <span class="text-[9px] font-medium text-slate-400 font-sans" x-text="'· ' + item.category"></span>
+                                </div>
+                                <span class="text-[10px] text-slate-400 font-normal block truncate" x-text="item.desc"></span>
+                            </div>
+                        </div>
+                        <span class="text-[10px] px-2.5 py-0.5 rounded-full font-bold bg-slate-100 text-slate-600 group-hover:bg-teal-50 group-hover:text-teal-700 transition shrink-0 ml-2" x-text="item.badge"></span>
+                    </a>
+                </template>
+
+                <div x-show="filteredCommands.length === 0" class="py-8 text-center text-slate-400 text-xs">
+                    <i class="fa-solid fa-magnifying-glass text-slate-300 text-xl block mb-2"></i>
+                    No commands matching "<span class="font-bold text-slate-600" x-text="searchQuery"></span>" found.
+                </div>
+            </div>
+
+            <div class="p-2.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400 shrink-0 font-medium px-4">
+                <span>Navigation shortcut</span>
+                <span class="flex items-center space-x-2">
+                    <span>Press</span> <kbd class="bg-white border border-slate-200 px-1.5 py-0.5 rounded font-mono text-slate-600 font-bold text-[9px]">ESC</kbd> <span>to close</span>
+                </span>
             </div>
         </div>
     </div>
