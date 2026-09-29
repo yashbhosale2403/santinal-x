@@ -47,19 +47,21 @@
             </a>
         </div>
         
-        <form id="device-select-form" method="GET" action="/sanitization/" class="flex items-center gap-3">
-            <select id="device-select" name="device_id" onchange="this.form.submit()" class="flex-1 bg-slate-50 border border-slate-200/80 text-slate-900 text-xs rounded-xl p-3 focus:outline-none focus:border-teal-500 font-sans font-medium">
-                {% if not selected_device %}
-                <option value="">-- Choose Storage Device to Sanitize --</option>
-                {% endif %}
-                {% for d in devices %}
-                <option value="{{ d.device_id }}" {% if selected_device and selected_device.device_id == d.device_id %}selected{% endif %}>
-                    🔌 {{ d.name }} [{{ d.get_media_type_display }} - {{ d.formatted_capacity }}] ({{ d.device_id }})
-                </option>
-                {% endfor %}
-            </select>
-            <button type="submit" id="load-policy-btn" class="px-5 py-3 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center space-x-2 shrink-0">
-                <i class="fa-solid fa-shield-halved text-xs"></i>
+        <form id="device-select-form" method="GET" action="/sanitization/" class="flex items-center gap-2.5">
+            <div class="relative flex-1">
+                <select id="device-select" name="device_id" onchange="this.form.submit()" class="w-full h-11 bg-slate-50 border border-slate-200/90 text-slate-800 text-xs rounded-xl px-3.5 focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 font-sans font-medium transition cursor-pointer">
+                    {% if not selected_device %}
+                    <option value="">-- Choose Storage Device to Sanitize --</option>
+                    {% endif %}
+                    {% for d in devices %}
+                    <option value="{{ d.device_id }}" {% if selected_device and selected_device.device_id == d.device_id %}selected{% endif %}>
+                        {{ d.name }} [{{ d.get_media_type_display }} &bull; {{ d.formatted_capacity }}] ({{ d.device_id }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" id="load-policy-btn" class="h-11 px-4.5 bg-slate-100 hover:bg-slate-200/80 active:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200/90 text-xs font-semibold rounded-xl transition flex items-center space-x-2 shrink-0 shadow-2xs">
+                <i class="fa-solid fa-arrows-rotate text-xs text-slate-500"></i>
                 <span>Load Policy</span>
             </button>
         </form>
