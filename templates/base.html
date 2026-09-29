@@ -145,111 +145,110 @@
 
         {% if request.path != '/landing/' %}
         <!-- Purity UI Floating Sidebar Navigation -->
-        <aside class="w-64 flex flex-col shrink-0">
+        <aside class="w-64 shrink-0 sticky top-4 self-start">
 
-            <div class="bg-white rounded-2xl shadow-purity-card border border-slate-100 p-5 space-y-6 flex flex-col justify-between sticky top-4 max-h-[calc(100vh-2rem)] overflow-y-auto scrollbar-thin">
+            <div class="bg-white rounded-2xl shadow-purity-card border border-slate-100 p-4 flex flex-col h-[calc(100vh-2rem)] justify-between overflow-hidden">
                 
-                <div class="space-y-6">
+                <div class="flex-1 flex flex-col min-h-0">
                     <!-- SENTINEL-X Brand Logo Header -->
-                    <a href="/" class="flex items-center space-x-3 px-2">
-                        <div class="w-9 h-9 rounded-xl bg-[#4FD1C5] text-white flex items-center justify-center font-black text-base shadow-purity-teal">
+                    <a href="/" class="flex items-center space-x-3 px-2 py-1 shrink-0">
+                        <div class="w-8 h-8 rounded-xl bg-[#4FD1C5] text-white flex items-center justify-center font-black text-sm shadow-purity-teal">
                             <i class="fa-solid fa-shield-halved"></i>
                         </div>
                         <div>
                             <span class="font-extrabold text-sm tracking-tight text-slate-800 uppercase">SENTINEL-X</span>
-                            <span class="text-[9px] font-extrabold text-slate-400 block -mt-0.5 uppercase tracking-wider">SANITIZATION & FORENSICS</span>
+                            <span class="text-[8px] font-extrabold text-slate-400 block -mt-0.5 uppercase tracking-wider">SANITIZATION & FORENSICS</span>
                         </div>
                     </a>
 
-
-                    <div class="h-px bg-slate-100 my-2"></div>
+                    <div class="h-px bg-slate-100 my-2 shrink-0"></div>
 
                     <!-- Navigation Items -->
-                    <nav class="space-y-1 text-xs font-bold">
-                        <a href="/" class="flex items-center space-x-3 p-3 rounded-xl transition {% if request.path == '/' %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
-                            <div class="w-7 h-7 rounded-lg {% if request.path == '/' %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center">
-                                <i class="fa-solid fa-house text-xs"></i>
+                    <nav class="space-y-0.5 text-xs font-bold flex-1 overflow-y-auto pr-1 scrollbar-thin">
+                        <a href="/" class="flex items-center space-x-3 px-3 py-2 rounded-xl transition {% if request.path == '/' %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <div class="w-6 h-6 rounded-lg {% if request.path == '/' %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-house"></i>
                             </div>
                             <span>Dashboard</span>
                         </a>
 
-                        <a href="/devices/" class="flex items-center space-x-3 p-3 rounded-xl transition {% if '/devices/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
-                            <div class="w-7 h-7 rounded-lg {% if '/devices/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center">
-                                <i class="fa-solid fa-hard-drive text-xs"></i>
+                        <a href="/devices/" class="flex items-center space-x-3 px-3 py-2 rounded-xl transition {% if '/devices/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <div class="w-6 h-6 rounded-lg {% if '/devices/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-hard-drive"></i>
                             </div>
                             <span>Devices</span>
                         </a>
 
-                        <a href="/sanitization/" class="flex items-center space-x-3 p-3 rounded-xl transition {% if '/sanitization/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
-                            <div class="w-7 h-7 rounded-lg {% if '/sanitization/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center">
-                                <i class="fa-solid fa-shield-halved text-xs"></i>
+                        <a href="/sanitization/" class="flex items-center space-x-3 px-3 py-2 rounded-xl transition {% if '/sanitization/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <div class="w-6 h-6 rounded-lg {% if '/sanitization/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-shield-halved"></i>
                             </div>
                             <span>Sanitize</span>
                         </a>
 
-                        <a href="/file-erasure/" class="flex items-center space-x-3 p-3 rounded-xl transition {% if '/file-erasure/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
-                            <div class="w-7 h-7 rounded-lg {% if '/file-erasure/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center">
-                                <i class="fa-solid fa-file-excel text-xs"></i>
+                        <a href="/file-erasure/" class="flex items-center space-x-3 px-3 py-2 rounded-xl transition {% if '/file-erasure/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <div class="w-6 h-6 rounded-lg {% if '/file-erasure/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-file-excel"></i>
                             </div>
                             <span>File Eraser</span>
                         </a>
 
-                        <a href="/recovery/" class="flex items-center space-x-3 p-3 rounded-xl transition {% if '/recovery/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
-                            <div class="w-7 h-7 rounded-lg {% if '/recovery/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center">
-                                <i class="fa-solid fa-magnifying-glass-location text-xs"></i>
+                        <a href="/recovery/" class="flex items-center space-x-3 px-3 py-2 rounded-xl transition {% if '/recovery/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <div class="w-6 h-6 rounded-lg {% if '/recovery/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-magnifying-glass-location"></i>
                             </div>
                             <span>Recover</span>
                         </a>
 
-                        <a href="/cases/" class="flex items-center space-x-3 p-3 rounded-xl transition {% if '/cases/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
-                            <div class="w-7 h-7 rounded-lg {% if '/cases/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center">
-                                <i class="fa-solid fa-folder text-xs"></i>
+                        <a href="/cases/" class="flex items-center space-x-3 px-3 py-2 rounded-xl transition {% if '/cases/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <div class="w-6 h-6 rounded-lg {% if '/cases/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-folder"></i>
                             </div>
                             <span>Cases</span>
                         </a>
 
-                        <a href="/reports/" class="flex items-center space-x-3 p-3 rounded-xl transition {% if '/reports/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
-                            <div class="w-7 h-7 rounded-lg {% if '/reports/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center">
-                                <i class="fa-solid fa-file-lines text-xs"></i>
+                        <a href="/reports/" class="flex items-center space-x-3 px-3 py-2 rounded-xl transition {% if '/reports/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <div class="w-6 h-6 rounded-lg {% if '/reports/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-file-lines"></i>
                             </div>
                             <span>Reports</span>
                         </a>
 
-                        <a href="/audit/" class="flex items-center space-x-3 p-3 rounded-xl transition {% if '/audit/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
-                            <div class="w-7 h-7 rounded-lg {% if '/audit/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center">
-                                <i class="fa-solid fa-chart-line text-xs"></i>
+                        <a href="/audit/" class="flex items-center space-x-3 px-3 py-2 rounded-xl transition {% if '/audit/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <div class="w-6 h-6 rounded-lg {% if '/audit/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-chart-line"></i>
                             </div>
                             <span>Audit Chain</span>
                         </a>
 
-                        <a href="/integrity/" class="flex items-center space-x-3 p-3 rounded-xl transition {% if '/integrity/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
-                            <div class="w-7 h-7 rounded-lg {% if '/integrity/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center">
-                                <i class="fa-solid fa-fingerprint text-xs"></i>
+                        <a href="/integrity/" class="flex items-center space-x-3 px-3 py-2 rounded-xl transition {% if '/integrity/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <div class="w-6 h-6 rounded-lg {% if '/integrity/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-fingerprint"></i>
                             </div>
                             <span>Integrity</span>
                         </a>
 
-                        <a href="/ledger/" class="flex items-center space-x-3 p-3 rounded-xl transition {% if '/ledger/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
-                            <div class="w-7 h-7 rounded-lg {% if '/ledger/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center">
-                                <i class="fa-solid fa-cubes text-xs"></i>
+                        <a href="/ledger/" class="flex items-center space-x-3 px-3 py-2 rounded-xl transition {% if '/ledger/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <div class="w-6 h-6 rounded-lg {% if '/ledger/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-cubes"></i>
                             </div>
                             <span>Ledger</span>
                         </a>
 
-                        <div class="pt-3 pb-1 px-3">
-                            <span class="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block">Knowledge</span>
+                        <div class="pt-2 pb-1 px-3">
+                            <span class="text-[9px] font-extrabold text-slate-400 uppercase tracking-widest block">Knowledge</span>
                         </div>
 
-                        <a href="/technology/" class="flex items-center space-x-3 p-3 rounded-xl transition {% if '/technology/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
-                            <div class="w-7 h-7 rounded-lg {% if '/technology/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center">
-                                <i class="fa-solid fa-brain text-xs"></i>
+                        <a href="/technology/" class="flex items-center space-x-3 px-3 py-2 rounded-xl transition {% if '/technology/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <div class="w-6 h-6 rounded-lg {% if '/technology/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-brain"></i>
                             </div>
                             <span>Technology & Methods</span>
                         </a>
 
-                        <a href="/documentation/" class="flex items-center space-x-3 p-3 rounded-xl transition {% if '/documentation/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
-                            <div class="w-7 h-7 rounded-lg {% if '/documentation/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center">
-                                <i class="fa-solid fa-book-bookmark text-xs"></i>
+                        <a href="/documentation/" class="flex items-center space-x-3 px-3 py-2 rounded-xl transition {% if '/documentation/' in request.path %}bg-[#4FD1C5] text-white shadow-purity-teal{% else %}text-slate-400 hover:bg-slate-50 hover:text-slate-800{% endif %}">
+                            <div class="w-6 h-6 rounded-lg {% if '/documentation/' in request.path %}bg-white/20 text-white{% else %}bg-teal-50 text-[#4FD1C5]{% endif %} flex items-center justify-center text-xs">
+                                <i class="fa-solid fa-book-bookmark"></i>
                             </div>
                             <span>Technical Documentation</span>
                         </a>
@@ -257,15 +256,19 @@
                 </div>
 
                 <!-- Purity UI Bottom Floating Help Card -->
-                <div class="bg-gradient-to-tr from-teal-500 to-cyan-400 rounded-2xl p-4 text-white space-y-2 shadow-purity-teal">
-                    <div class="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center font-bold text-sm">
-                        <i class="fa-solid fa-circle-question"></i>
+                <div class="pt-3 shrink-0">
+                    <div class="bg-gradient-to-tr from-teal-500 to-cyan-400 rounded-xl p-3 text-white space-y-1.5 shadow-purity-teal">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-6 h-6 rounded-lg bg-white/20 flex items-center justify-center font-bold text-xs">
+                                <i class="fa-solid fa-circle-question"></i>
+                            </div>
+                            <div class="font-extrabold text-xs">Need Help?</div>
+                        </div>
+                        <p class="text-[10px] text-teal-50 opacity-90 leading-tight">NIST SP 800-88 Rev. 2 & forensic docs.</p>
+                        <a href="/documentation/" class="block text-center py-1.5 bg-white text-teal-700 font-extrabold text-[9px] rounded-lg uppercase tracking-wider shadow-xs hover:bg-teal-50 transition">
+                            DOCUMENTATION
+                        </a>
                     </div>
-                    <div class="font-extrabold text-xs">Need Help?</div>
-                    <p class="text-[10px] text-teal-50 opacity-90 leading-tight">Check NIST SP 800-88 Rev. 2 guidance and digital forensic documentation.</p>
-                    <a href="/landing/" class="block text-center py-2 bg-white text-teal-700 font-extrabold text-[10px] rounded-xl uppercase tracking-wider shadow-sm hover:bg-teal-50 transition">
-                        DOCUMENTATION
-                    </a>
                 </div>
 
             </div>
