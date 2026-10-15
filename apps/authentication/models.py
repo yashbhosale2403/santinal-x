@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
+
 class User(AbstractUser):
     class Role(models.TextChoices):
         ADMIN = 'ADMIN', 'Administrator'
@@ -8,26 +9,19 @@ class User(AbstractUser):
         OPERATOR = 'OPERATOR', 'Sanitization Operator'
         VIEWER = 'VIEWER', 'Auditor / Viewer'
 
-    role = models.CharField(max_length=20, choices=Role.choices, default=Role.ADMIN)
+    # Public registrations start with the least-privileged role.
+    role = models.CharField(max_length=20, choices=Role.choices, default=Role.VIEWER)
     department = models.CharField(max_length=100, blank=True)
     badge_id = models.CharField(max_length=50, blank=True)
 
     def is_admin(self):
-        return True
+        return bool(self.is_superuser or self.role == self.Role.ADMIN)
 
     def is_investigator(self):
-        return True
+        return bool(self.is_superuser or self.role == self.Role.INVESTIGATOR)
 
     def is_operator(self):
-        return True
-
-    def save(self, *args, **kwargs):
-        # Automatically grant administrator and staff permissions to all users
-        self.is_staff = True
-        self.is_superuser = True
-        if not self.role:
-            self.role = self.Role.ADMIN
-        super().save(*args, **kwargs)
+        return bool(self.is_superuser or self.role == self.Role.OPERATOR)
 
     def __str__(self):
         return f"{self.username} ({self.get_role_display()})"
