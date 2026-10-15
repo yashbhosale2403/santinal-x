@@ -5,21 +5,20 @@ from django.core.exceptions import ValidationError
 from django.contrib import messages
 from apps.authentication.models import User
 
+
 def login_view(request):
     if request.user.is_authenticated:
         return redirect('/')
 
     if request.method == 'POST':
-        u = request.POST.get('username')
-        p = request.POST.get('password')
-        
-        user = authenticate(request, username=u, password=p)
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
             messages.success(request, f"Welcome back, {user.username} ({user.get_role_display()})!")
             return redirect('/')
-        else:
-            messages.error(request, "Invalid username or password credentials.")
+        messages.error(request, "Invalid username or password credentials.")
 
     return render(request, 'authentication/login.html')
 
@@ -28,16 +27,24 @@ def signup_view(request):
     if request.user.is_authenticated:
         return redirect('/')
 
+    public_roles = [
+        (User.Role.INVESTIGATOR, 'Forensic Investigator'),
+        (User.Role.OPERATOR, 'Sanitization Operator'),
+        (User.Role.VIEWER, 'Auditor / Viewer'),
+    ]
+
     if request.method == 'POST':
         username = request.POST.get('username', '').strip()
         email = request.POST.get('email', '').strip()
         password = request.POST.get('password', '')
         password_confirm = request.POST.get('password_confirm', '')
-        role = request.POST.get('role', User.Role.ADMIN)
+        requested_role = request.POST.get('role', User.Role.VIEWER)
+        # Administrator is never assignable through public self-registration.
+        allowed_roles = {User.Role.INVESTIGATOR, User.Role.OPERATOR, User.Role.VIEWER}
+        role = requested_role if requested_role in allowed_roles else User.Role.VIEWER
         department = request.POST.get('department', '').strip()
         badge_id = request.POST.get('badge_id', '').strip()
 
-        # Validation
         errors = []
         if not username:
             errors.append("Username is required.")
@@ -47,19 +54,16 @@ def signup_view(request):
             errors.append("This email address is already registered.")
         if password != password_confirm:
             errors.append("Passwords do not match.")
-        if role not in [choice[0] for choice in User.Role.choices]:
-            role = User.Role.ADMIN
 
-        # Django password strength validation
         if not errors:
             try:
                 validate_password(password)
-            except ValidationError as e:
-                errors.extend(e.messages)
+            except ValidationError as exc:
+                errors.extend(exc.messages)
 
         if errors:
-            for err in errors:
-                messages.error(request, err)
+            for error in errors:
+                messages.error(request, error)
             return render(request, 'authentication/signup.html', {
                 'form_data': {
                     'username': username,
@@ -68,27 +72,22 @@ def signup_view(request):
                     'department': department,
                     'badge_id': badge_id,
                 },
-                'roles': User.Role.choices,
+                'roles': public_roles,
             })
 
-        # Create user with full administrator permissions
         user = User.objects.create_user(
             username=username,
             email=email,
             password=password,
-            role=role if role else User.Role.ADMIN,
+            role=role,
             department=department,
             badge_id=badge_id,
-            is_staff=True,
-            is_superuser=True,
         )
         login(request, user)
-        messages.success(request, f"Welcome to SENTINEL-X, {user.username}! Your account has been created with full Administrator permissions.")
+        messages.success(request, f"Welcome to SENTINEL-X, {user.username}! Your account has been created.")
         return redirect('/')
 
-    return render(request, 'authentication/signup.html', {
-        'roles': User.Role.choices,
-    })
+    return render(request, 'authentication/signup.html', {'roles': public_roles})
 
 
 def logout_view(request):
