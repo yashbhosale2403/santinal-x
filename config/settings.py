@@ -9,12 +9,25 @@ from pathlib import Path
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get('SENTINELX_SECRET_KEY', 'django-insecure-sentinelx-sih26149-cybersecurity-forensics-key')
+SECRET_KEY = os.environ.get('SENTINELX_SECRET_KEY')
+DEBUG = os.environ.get('DEBUG', 'False').strip().lower() in {'1', 'true', 'yes'}
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = 'local-development-only-change-me'
+    else:
+        raise RuntimeError('SENTINELX_SECRET_KEY must be set when DEBUG is disabled')
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+ALLOWED_HOSTS = [
+    host.strip() for host in os.environ.get(
+        'ALLOWED_HOSTS', 'localhost,127.0.0.1'
+    ).split(',') if host.strip()
+]
 
-ALLOWED_HOSTS = ['*']
+# Cloud deployments default to demo-safe mode. Real wiping/erasure operations
+# must only run in a separately isolated, explicitly configured local lab.
+SENTINELX_CLOUD_DEMO = os.environ.get(
+    'SENTINELX_CLOUD_DEMO', 'true'
+).strip().lower() in {'1', 'true', 'yes'}
 
 # Custom User Model
 AUTH_USER_MODEL = 'authentication.User'
