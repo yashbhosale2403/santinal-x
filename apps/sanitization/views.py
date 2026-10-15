@@ -1,6 +1,7 @@
 import os
 import threading
 from django.shortcuts import render, get_object_or_404, redirect
+from django.conf import settings
 from django.http import JsonResponse
 from django.contrib import messages
 from apps.devices.models import StorageDevice
@@ -11,6 +12,11 @@ from workers.device_worker.detector import DeviceDetector
 from apps.audit.utils import AuditLogger
 
 def sanitization_wizard(request):
+    # A shared cloud demo must never execute drive erasure against its host filesystem.
+    if settings.SENTINELX_CLOUD_DEMO and request.method == 'POST':
+        messages.error(request, 'Drive sanitization is disabled on the hosted demo. Use the local app with isolated test media and Demo/Safe Test mode.')
+        return redirect('/sanitization/')
+
     # Rescan or auto-detect if no devices exist
     if request.GET.get('rescan') == '1' or StorageDevice.objects.count() == 0:
         detected = DeviceDetector.detect_all_devices()
