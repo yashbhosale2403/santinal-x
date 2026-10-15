@@ -4,11 +4,18 @@ import time
 import shutil
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.conf import settings
 from apps.file_erasure.models import FileErasureOperation
 from apps.audit.utils import AuditLogger
 
 def file_erasure_view(request):
     if request.method == 'POST':
+        if getattr(settings, 'SENTINELX_CLOUD_DEMO', True):
+            messages.error(
+                request,
+                "File erasure is disabled in this hosted demo. Use the isolated local lab for destructive operations."
+            )
+            return redirect('/file-erasure/')
         target_path = request.POST.get('target_path', '').strip()
         erasure_method = request.POST.get('erasure_method', 'ZERO_OVERWRITE')
         execution_mode = request.POST.get('execution_mode', 'REAL_MODE')
